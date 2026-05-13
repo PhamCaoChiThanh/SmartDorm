@@ -4,6 +4,9 @@ dist/
 build/
 .zip
 
+.github/workflows/
+.postman/
+
 # Secrets
 .env
 .env.local
