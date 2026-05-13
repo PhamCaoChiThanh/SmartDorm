@@ -55,9 +55,49 @@ Dự án thể hiện tư duy thực tế của một kỹ sư Cloud:
 
 ---
 
+## 📂 Cấu trúc Thư mục (Project Structure)
+
+```text
+.
+├── .github/workflows/   # CI/CD pipelines (GitHub Actions)
+├── terraform/           # Hạ tầng mã hóa (IaC) cho AWS
+│   ├── main.tf          # Cấu hình chính
+│   ├── rds.tf           # PostgreSQL setup
+│   ├── lambda.tf        # Lambda & IAM Roles
+│   ├── s3.tf            # Hosting & Assets
+│   └── monitoring.tf    # CloudWatch Logs & Alarms
+├── src/
+│   ├── backend/         # Logic xử lý (Lambda)
+│   │   └── modules/
+│   │       └── vehicles/# Module Quản lý Xe & Gửi xe
+│   └── frontend/        # React/Next.js source
+├── .env.example         # Template biến môi trường
+└── database.sql         # Schema khởi tạo DB
+```
+
+---
+
 ## 🚀 Hướng dẫn Cài đặt & Triển khai
 
-*(Đang cập nhật mã nguồn và file Terraform...)*
+### 1. Triển khai Hạ tầng (Terraform)
+1. Cài đặt Terraform và AWS CLI.
+2. Di chuyển vào thư mục `terraform/`.
+3. Chạy lệnh:
+   ```bash
+   terraform init
+   terraform apply -var="db_password=YOUR_PASSWORD"
+   ```
+
+### 2. Cấu hình Biến môi trường
+Copy `.env.example` thành `.env` và cập nhật các thông số từ Output của Terraform (RDS Endpoint, Lambda URL).
+
+### 3. CI/CD (GitHub Actions)
+Thiết lập các **Secrets** trong GitHub Repository:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DB_PASSWORD`
+
+Hệ thống sẽ tự động Deploy mỗi khi bạn push code lên nhánh `main`.
 
 ---
 

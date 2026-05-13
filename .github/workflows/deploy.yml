@@ -1,0 +1,52 @@
+name: SmartDorm CD - Unified Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ap-southeast-1
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 1. Đóng gói Lambda trước để Terraform có file để upload
+      - name: Package Vehicles Module
+        run: |
+          cd src/backend/modules/vehicles
+          npm install --production
+          zip -r ../../../../terraform/placeholder.zip .
+          cd ../../../..
+
+      # 2. Triển khai hạ tầng (Terraform sẽ tự upload placeholder.zip lên Lambda)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+
+      # 3. Build & Deploy Frontend (nếu cần)
+      - name: Sync Frontend to S3
+        run: |
+          # Giả định folder frontend đã có index.html
+          aws s3 sync src/frontend s3://smart-dorm-assets-storage --delete
+
