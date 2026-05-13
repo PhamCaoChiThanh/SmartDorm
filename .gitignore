@@ -4,8 +4,7 @@ dist/
 build/
 .zip
 
-.github/workflows/
-.postman/
+.postman/resources.yaml
 
 # Secrets
 .env
