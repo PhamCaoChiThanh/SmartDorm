@@ -4,7 +4,8 @@ dist/
 build/
 .zip
 
-.postman/resources.yaml
+.postman/
+.github/
 
 # Secrets
 .env
