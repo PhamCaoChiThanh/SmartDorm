@@ -1,0 +1,9 @@
+{
+  "name": "smart-dorm-backend",
+  "version": "1.0.0",
+  "description": "Backend for SmartDorm",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.11.0"
+  }
+}
