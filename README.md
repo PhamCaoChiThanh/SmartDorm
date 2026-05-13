@@ -1,61 +1,56 @@
-# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX Cloud-Native & Bảo mật Cao
+# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX Cloud-Native Tối ưu Chi phí
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![NodeJS](https://img.shields.io/badge/Node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Security](https://img.shields.io/badge/Security-Protected-green?style=for-the-badge&logo=shield-halved)](https://owasp.org/)
+[![Cost-Optimized](https://img.shields.io/badge/Cost-Optimized-blue?style=for-the-badge&logo=cash-register)](https://aws.amazon.com/free/)
 
 ## 💡 Ý tưởng Dự án
-**Secure SmartDorm** là phiên bản nâng cao của hệ thống quản lý Ký túc xá (KTX), được thiết kế theo mô hình **Fullstack Cloud-Native**. Dự án tập trung vào việc tối ưu hóa hiệu năng, khả năng mở rộng và đặc biệt là áp dụng các tiêu chuẩn bảo mật chuẩn doanh nghiệp trên nền tảng AWS.
+**Secure SmartDorm** là hệ thống quản lý Ký túc xá được thiết kế theo mô hình **Fullstack Cloud-Native Tối ưu**. Dự án tập trung vào việc cân bằng giữa hiệu năng cao và chi phí vận hành thấp nhất có thể bằng cách tận dụng triệt để mô hình **Serverless** và gói **AWS Free Tier**.
 
-Dây không chỉ là một ứng dụng quản lý thông thường, mà là một hệ thống "Real System" giải quyết các bài toán về hạ tầng và an toàn thông tin thực tế.
-
----
-
-## 🏗️ Kiến trúc Hệ thống (Architecture)
-Hệ thống được triển khai hoàn toàn trên hạ tầng AWS nhằm đảm bảo tính sẵn sàng cao (High Availability) và bảo mật tối đa:
-
-- **Frontend Hosting:** [Amazon S3](https://aws.amazon.com/s3/) kết hợp với [Amazon CloudFront](https://aws.amazon.com/cloudfront/) (CDN) để tăng tốc độ tải trang và bảo mật lớp biên.
-- **API Layer:** [Amazon API Gateway](https://aws.amazon.com/api-gateway/) đóng vai trò là cửa ngõ duy nhất cho các yêu cầu từ client.
-- **Compute (Serverless):** [AWS Lambda](https://aws.amazon.com/lambda/) xử lý logic backend, giúp tối ưu chi phí và tự động mở rộng.
-- **Database:** [Amazon RDS](https://aws.amazon.com/rds/) (Relational Database Service) lưu trữ dữ liệu tập trung và tin cậy.
-- **Authentication:** [Amazon Cognito](https://aws.amazon.com/cognito/) quản lý người dùng, đăng ký/đăng nhập và phân quyền.
+Đây là minh chứng cho việc xây dựng một hệ thống quy mô lớn nhưng chỉ tốn phí duy trì gần như bằng 0.
 
 ---
 
-## 🧱 Stack Công nghệ
-| Thành phần | Công nghệ sử dụng |
-| :--- | :--- |
-| **Frontend** | ReactJS / Next.js |
-| **Cloud Hosting** | S3 + CloudFront |
-| **Backend** | AWS Lambda (Node.js/Python/C#) |
-| **API Management** | Amazon API Gateway |
-| **Database** | Amazon RDS (PostgreSQL/MySQL) |
-| **Identity Management** | Amazon Cognito |
+## 🏗️ Kiến trúc Hệ thống Tối ưu (Architecture)
+Hệ thống được rút gọn vào 3 dịch vụ cốt lõi của AWS để tối ưu chi phí và đơn giản hóa vận hành:
+
+- **Compute & API Layer:** [AWS Lambda](https://aws.amazon.com/lambda/) kết hợp với **Function URLs**. Thay vì dùng API Gateway đắt đỏ, hệ thống sử dụng trực tiếp Function URLs để cung cấp Endpoint cho Backend với chi phí $0.
+- **Database Layer:** [Amazon RDS](https://aws.random.com/rds/) (PostgreSQL). Sử dụng gói `db.t4g.micro` để tận dụng 12 tháng miễn phí, đảm bảo lưu trữ dữ liệu an toàn và tin cậy.
+- **Storage & Frontend Hosting:** [Amazon S3](https://aws.amazon.com/s3/). Đóng vai trò kép: Hosting cho ứng dụng React/Next.js (Static Website Hosting) và lưu trữ ảnh (CCCD, phòng, xe).
 
 ---
 
-## 🛡️ Bảo mật (Security First)
-Đây là điểm mạnh nhất của dự án, giúp ứng dụng đạt chuẩn Cloud Security:
+## 🧱 Stack Công nghệ (The Big Three)
+| Thành phần | Công nghệ sử dụng | Chi phí (Free Tier) |
+| :--- | :--- | :--- |
+| **Backend Logic** | AWS Lambda (Node.js/C#) | $0 (1M requests/mo) |
+| **Database** | Amazon RDS (PostgreSQL) | $0 (750 hrs/mo) |
+| **Frontend & Assets** | Amazon S3 | ~$0.1 (Storage only) |
 
-*   **Xác thực & Phân quyền:** Sử dụng **JWT (JSON Web Token)** kết hợp với **RBAC (Role-Based Access Control)** để quản lý quyền truy cập chi tiết (Admin, Quản lý, Sinh viên).
-*   **Bảo vệ lớp biên:** Triển khai **AWS WAF (Web Application Firewall)** để chống lại các cuộc tấn công phổ biến như SQL Injection (SQLi) và Cross-Site Scripting (XSS).
-*   **Bảo mật hạ tầng:** Cơ sở dữ liệu (RDS) được đặt trong **Private Subnet**, chỉ cho phép truy cập từ nội bộ hệ thống (Lambda), ngăn chặn hoàn toàn truy cập trái phép từ internet.
-*   **Giám sát & Nhật ký:** Toàn bộ hoạt động của hệ thống được ghi log chi tiết qua **Amazon CloudWatch**, giúp phát hiện sớm các hành vi bất thường và hỗ trợ debug.
+---
+
+## 🛡️ Chiến lược Bảo mật & Tối ưu (Security & Cost)
+Mặc dù tối giản về dịch vụ, dự án vẫn áp dụng các tiêu chuẩn bảo mật nghiêm ngặt:
+
+*   **Auth tự quản lý:** Sử dụng **JWT (JSON Web Token)** tích hợp trực tiếp trong Backend Lambda thay vì dùng Cognito, giúp giảm phụ thuộc và tối ưu tốc độ.
+*   **White-listing Database:** RDS được cấu hình Publicly Accessible nhưng **chỉ chấp nhận kết nối từ Security Group của Lambda**, ngăn chặn hoàn toàn các truy cập từ bên ngoài internet.
+*   **Zero Infrastructure Fee:** Loại bỏ NAT Gateway ($32/tháng) bằng cách tối ưu hóa Routing, đưa chi phí vận hành cố định về mức $0.
+*   **Monitoring:** Sử dụng **Amazon CloudWatch** để theo dõi lỗi và tình trạng hệ thống theo thời gian thực.
 
 ---
 
 ## ⭐ Tại sao dự án này có "CV cực mạnh"?
-Dự án thể hiện tư duy của một kỹ sư không chỉ biết code mà còn biết thiết kế hệ thống chuyên nghiệp:
-1.  **Real System:** Áp dụng kiến trúc Serverless hiện đại, tối ưu hóa vận hành.
-2.  **Cloud Native:** Thành thạo các dịch vụ cốt lõi của AWS.
-3.  **Security Mindset:** Hiểu và thực hành các tiêu chuẩn bảo mật OWASP và Cloud Infrastructure Security.
-4.  **Scalability:** Hệ thống sẵn sàng phục vụ hàng ngàn người dùng mà không cần thay đổi kiến trúc cốt lõi.
+Dự án thể hiện tư duy thực tế của một kỹ sư Cloud:
+1.  **Cost Efficiency:** Biết cách thiết kế hệ thống chạy ổn định với chi phí thấp nhất (Skill tối quan trọng cho doanh nghiệp).
+2.  **Serverless Mastery:** Thành thạo kiến trúc Event-driven và Lambda Function URLs.
+3.  **Fullstack Ownership:** Tự quản lý từ hạ tầng (Terraform), Database đến Frontend/Backend.
+4.  **Database Design:** Thiết kế chuẩn hóa dữ liệu cho một bài toán thực tế (Quản lý phòng, xe, điện nước).
 
 ---
 
 ## 🚀 Hướng dẫn Cài đặt & Triển khai
-*(Đang cập nhật...)*
+*(Đang cập nhật mã nguồn và file Terraform...)*
 
 ---
-**Secure SmartDorm** - *Build for Security, Scale for Future.*
+**Secure SmartDorm** - *Maximum Performance, Minimum Cost.*
