@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 "use client";
 
 import { useEffect, useState } from "react";
@@ -177,10 +176,3 @@ export default function Dashboard() {
     </div>
   );
 }
-=======
-import { redirect } from "next/navigation";
-
-export default function Home() {
-  redirect("/login");
-}
->>>>>>> origin/dung
