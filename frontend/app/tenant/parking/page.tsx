@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Car, FileText } from "lucide-react";
 
 const vehicles = [
   { id: 1, plate: "59X1-12345", type: "Xe máy", status: "ACTIVE" },
@@ -23,13 +24,15 @@ export default function TenantParking() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm px-4 py-4 flex justify-between items-center">
         <button onClick={() => router.back()} className="text-blue-600 text-sm">← Quay lại</button>
-        <h1 className="font-bold text-blue-600">🚗 Đăng ký xe</h1>
+        <h1 className="font-bold text-blue-600 flex items-center gap-1">
+          <Car size={18} /> Đăng ký xe
+        </h1>
         <button
-  onClick={() => router.push("/tenant/parking-invoice")}
-  className="text-sm text-blue-600 hover:underline"
->
-  Xem hóa đơn
-</button>
+          onClick={() => router.push("/tenant/parking-invoice")}
+          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+        >
+          <FileText size={14} /> Xem hóa đơn
+        </button>
       </nav>
 
       <div className="p-4 max-w-lg mx-auto space-y-4">
@@ -76,7 +79,9 @@ export default function TenantParking() {
 
         {/* Xe hiện tại */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-semibold mb-3">🚘 Xe đang đăng ký</h2>
+          <h2 className="font-semibold mb-3 flex items-center gap-2">
+            <Car size={16} className="text-gray-500" /> Xe đang đăng ký
+          </h2>
           {vehicles.map((v) => (
             <div key={v.id} className="flex justify-between items-center py-2 border-b last:border-0">
               <div>
