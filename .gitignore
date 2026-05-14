@@ -23,5 +23,11 @@ Thumbs.db
 
 # Documentation
 Implementation Plan.docx
+<<<<<<< HEAD
 backend/
 frontend/
+=======
+.github\workflows.terraform/  
+*.zip  
+terraform.tfstate* 
+>>>>>>> origin/tri
