@@ -1,2 +1,4 @@
 Implementation Plan.docx
-.github\workflows
+.github\workflows.terraform/  
+*.zip  
+terraform.tfstate* 
