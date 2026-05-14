@@ -1,10 +1,18 @@
 "use client";
 
+import {
+  Home,
+  CheckCircle2,
+  LockKeyholeOpen,
+  BadgeDollarSign,
+  Wrench,
+} from "lucide-react";
+
 const stats = [
-  { label: "Tổng phòng", value: "48", icon: "🏠", border: "border-blue-500" },
-  { label: "Đang thuê", value: "42", icon: "✅", border: "border-green-500" },
-  { label: "Phòng trống", value: "6", icon: "🔓", border: "border-yellow-500" },
-  { label: "Doanh thu tháng", value: "84.000.000đ", icon: "💰", border: "border-purple-500" },
+  { label: "Tổng phòng", value: "48", icon: <Home size={28} className="text-blue-500" />, border: "border-blue-500" },
+  { label: "Đang thuê", value: "42", icon: <CheckCircle2 size={28} className="text-green-500" />, border: "border-green-500" },
+  { label: "Phòng trống", value: "6", icon: <LockKeyholeOpen size={28} className="text-yellow-500" />, border: "border-yellow-500" },
+  { label: "Doanh thu tháng", value: "84.000.000đ", icon: <BadgeDollarSign size={28} className="text-purple-500" />, border: "border-purple-500" },
 ];
 
 const maintenance = [
@@ -24,7 +32,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {stats.map((s) => (
           <div key={s.label} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${s.border}`}>
-            <div className="text-3xl mb-2">{s.icon}</div>
+            <div className="mb-2">{s.icon}</div>
             <div className="text-2xl font-bold text-gray-800">{s.value}</div>
             <div className="text-sm text-gray-500">{s.label}</div>
           </div>
@@ -33,7 +41,10 @@ export default function AdminDashboard() {
 
       {/* Báo cáo bảo trì */}
       <div className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold text-lg mb-4">🔧 Báo cáo bảo trì</h2>
+        <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
+          <Wrench size={18} className="text-gray-600" />
+          Báo cáo bảo trì
+        </h2>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-gray-400 border-b">
