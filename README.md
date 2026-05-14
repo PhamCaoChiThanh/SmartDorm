@@ -1,4 +1,4 @@
-# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX
+# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX Cloud-Native Tối ưu Chi phí
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -8,7 +8,6 @@
 ## 💡 Ý tưởng Dự án
 
 **Secure SmartDorm** là hệ thống quản lý Ký túc xá được thiết kế theo mô hình **Fullstack Cloud-Native Tối ưu**. Dự án tập trung vào việc cân bằng giữa hiệu năng cao và chi phí vận hành thấp nhất có thể bằng cách tận dụng triệt để mô hình **Serverless** và gói **AWS Free Tier**.
-
 Đây là minh chứng cho việc xây dựng một hệ thống quy mô lớn nhưng chỉ tốn phí duy trì gần như bằng 0.
 
 ---
@@ -25,11 +24,11 @@ Hệ thống được rút gọn vào 3 dịch vụ cốt lõi của AWS để t
 
 ## 🧱 Stack Công nghệ (The Big Three)
 
-| Thành phần                | Công nghệ sử dụng   | Chi phí (Free Tier) |
-| :-------------------------- | :---------------------- | :------------------- |
-| **Backend Logic**     | AWS Lambda (Node.js/C#) | $0 (1M requests/mo)  |
-| **Database**          | Amazon RDS (PostgreSQL) | $0 (750 hrs/mo)      |
-| **Frontend & Assets** | Amazon S3               | ~$0.1 (Storage only) |
+| Thành phần | Công nghệ sử dụng | Chi phí (Free Tier) |
+| :--- | :--- | :--- |
+| **Backend Logic** | AWS Lambda (Node.js/C#) | $0 (1M requests/mo) |
+| **Database** | Amazon RDS (PostgreSQL) | $0 (750 hrs/mo) |
+| **Frontend & Assets** | Amazon S3 | ~$0.1 (Storage only) |
 
 ---
 
