@@ -26,6 +26,10 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        // Đảm bảo tương thích với các biến state của nhánh dung
+        localStorage.setItem("currentEmail", data.user.email || data.user.username);
+        localStorage.setItem("currentName", data.user.username);
+        localStorage.setItem("currentRole", data.user.role);
         router.push("/");
       } else {
         setError("Đăng nhập thất bại. Không nhận được token.");
