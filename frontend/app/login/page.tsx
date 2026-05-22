@@ -14,23 +14,27 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Check tài khoản mock cứng
     if (email === "admin@smartdorm.com" && password === "123456") {
       router.push("/admin/dashboard");
       return;
     }
 
     if (email === "tenant@smartdorm.com" && password === "123456") {
-      router.push("/tenant/invoice");
+      localStorage.setItem("currentEmail", email);
+      localStorage.setItem("currentName", "Tenant Demo");
+      localStorage.setItem("currentRole", "TENANT");
+      router.push("/");
       return;
     }
 
-    // Check tài khoản đăng ký qua localStorage
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     const user = users.find((u: any) => u.email === email && u.password === password);
 
     if (user) {
-      router.push("/tenant/invoice");
+      localStorage.setItem("currentEmail", email);
+      localStorage.setItem("currentName", user.fullName);
+      localStorage.setItem("currentRole", "TENANT");
+      router.push("/");
     } else {
       setError("Email hoặc mật khẩu không đúng");
     }
