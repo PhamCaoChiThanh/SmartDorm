@@ -26,8 +26,18 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+interface RoomItem {
+  id: number | string;
+  name: string;
+  area: string;
+  price: number;
+  capacity: number;
+  available: number;
+  image: string;
+}
+
 // ── đổi tên thành defaultRooms để tránh conflict với state ──
-const defaultRooms = [
+const defaultRooms: RoomItem[] = [
   { id: 1, name: "Phòng KTX A1", area: "Khu A - Tầng 1", price: 1500000, capacity: 4, available: 2, image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop" },
   { id: 2, name: "Phòng KTX B3", area: "Khu B - Tầng 3", price: 1800000, capacity: 2, available: 1, image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop" },
   { id: 3, name: "Phòng KTX C2", area: "Khu C - Tầng 2", price: 2000000, capacity: 2, available: 0, image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=400&h=300&fit=crop" },
@@ -63,16 +73,26 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [priceFilter, setPriceFilter] = useState("all");
   const [currentName, setCurrentName] = useState<string | null>(null);
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const roomsRef = useRef<HTMLDivElement>(null);
 
   // ── state rooms (defaultRooms + owner listings từ localStorage) ──
-  const [rooms, setRooms] = useState(defaultRooms);
+  const [rooms, setRooms] = useState<RoomItem[]>(defaultRooms);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const name = localStorage.getItem("currentName");
     if (name) setCurrentName(name);
+
+    const role = localStorage.getItem("currentRole");
+    if (role) {
+      setCurrentRole(role);
+      if (role === "ADMIN" || role === "MANAGER") {
+        router.push("/admin/dashboard");
+        return;
+      }
+    }
 
     const token = localStorage.getItem("token");
 
@@ -83,9 +103,9 @@ export default function HomePage() {
         if (response.success && Array.isArray(response.data)) {
           const mappedRooms = response.data.map((room: any) => ({
             id: room.id,
-            name: `Phòng KTX ${room.room_number}`,
-            area: `Khu KTX - Phòng ${room.room_number}`,
-            price: room.base_price || 1500000,
+            name: `Phòng KTX ${room.roomNumber || room.room_number}`,
+            area: `Khu KTX - Phòng ${room.roomNumber || room.room_number}`,
+            price: room.basePrice || room.base_price || 1500000,
             capacity: room.capacity || 4,
             available: room.status === "AVAILABLE" || room.status === "TRỐNG" ? (room.capacity || 4) : 0,
             image: room.image || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop"
@@ -93,7 +113,12 @@ export default function HomePage() {
 
           const ownerListings = JSON.parse(localStorage.getItem("ownerListings") || "[]");
           const published = ownerListings.filter((l: any) => l.publish);
-          setRooms([...mappedRooms, ...published]);
+          
+          if (mappedRooms.length === 0) {
+            setRooms([...defaultRooms, ...published]);
+          } else {
+            setRooms([...mappedRooms, ...published]);
+          }
         }
       } catch (err: unknown) {
         console.error("Failed to load rooms from API, using default/local rooms", err);
@@ -125,12 +150,33 @@ export default function HomePage() {
     localStorage.removeItem("currentName");
     localStorage.removeItem("currentRole");
     setCurrentName(null);
+    setCurrentRole(null);
   };
 
   const filtered = rooms.filter((r) => {
-    const matchSearch =
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.area.toLowerCase().includes(search.toLowerCase());
+    let matchSearch = true;
+    if (search.trim()) {
+      const query = search.trim().toLowerCase();
+      
+      // Xử lý các tag đặc biệt
+      if (query === "còn trống") {
+        matchSearch = r.available > 0;
+      } else if (query === "giá rẻ") {
+        matchSearch = r.price <= 1500000;
+      } else if (query === "2 người") {
+        matchSearch = r.capacity === 2;
+      } else if (query === "ktx khu a") {
+        matchSearch = r.name.toLowerCase().includes("khu a") || r.area.toLowerCase().includes("khu a");
+      } else {
+        // Tách từ khóa tìm kiếm thành các từ đơn để so khớp thông minh (Token-based matching)
+        const tokens = query.split(/\s+/).filter(Boolean);
+        matchSearch = tokens.every(token =>
+          r.name.toLowerCase().includes(token) ||
+          r.area.toLowerCase().includes(token)
+        );
+      }
+    }
+
     const matchPrice =
       priceFilter === "all" ? true :
         priceFilter === "low" ? r.price <= 1500000 :
@@ -326,19 +372,16 @@ export default function HomePage() {
                   <User size={13} className="text-violet-500" />
                   <span className="font-medium">{currentName}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    const role = localStorage.getItem("currentRole");
-                    if (role === "ADMIN" || role === "MANAGER") {
+                {(currentRole === "ADMIN" || currentRole === "MANAGER") && (
+                  <button
+                    onClick={() => {
                       router.push("/admin/dashboard");
-                    } else {
-                      router.push("/tenant/dashboard");
-                    }
-                  }}
-                  className="glow-btn text-white text-sm px-5 py-2 rounded-full font-semibold"
-                >
-                  Quản lý
-                </button>
+                    }}
+                    className="glow-btn text-white text-sm px-5 py-2 rounded-full font-semibold"
+                  >
+                    Quản lý
+                  </button>
+                )}
                 <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
                   <LogOut size={14} />
                 </button>
@@ -499,7 +542,7 @@ export default function HomePage() {
         </div>
 
         {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F8FAFC] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-[#F8FAFC] to-transparent" />
       </section>
 
       {/* ─── STATS ───────────────────────────────────── */}
@@ -549,10 +592,10 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-10 max-w-3xl mx-auto">
             <div className="flex gap-3 flex-wrap">
               <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 min-w-[180px]">
-                <Search size={15} className="text-gray-400 flex-shrink-0" />
+                <Search size={15} className="text-gray-400 shrink-0" />
                 <input
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                   placeholder="Tìm theo tên phòng, khu vực..."
                   className="bg-transparent text-sm focus:outline-none w-full text-gray-700 placeholder:text-gray-400"
                 />
@@ -561,7 +604,7 @@ export default function HomePage() {
                 <SlidersHorizontal size={14} className="text-gray-400" />
                 <select
                   value={priceFilter}
-                  onChange={(e) => setPriceFilter(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriceFilter(e.target.value)}
                   className="bg-transparent text-sm focus:outline-none text-gray-600"
                 >
                   <option value="all">Tất cả giá</option>
@@ -603,7 +646,7 @@ export default function HomePage() {
                   <div key={room.id} className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 group border border-gray-100 bg-white">
                     <div className="relative overflow-hidden h-52">
                       <img src={room.image} alt={room.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                       <div className="absolute top-3 left-3 flex gap-2">
                         <span className={`text-[11px] px-3 py-1 rounded-full font-semibold ${room.available > 0 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}>
                           {room.available > 0 ? `✓ Còn ${room.available} chỗ` : "✗ Đã đầy"}
@@ -676,7 +719,7 @@ export default function HomePage() {
               const Icon = f.icon;
               return (
                 <div key={f.title} className="bg-gray-50 rounded-3xl p-7 card-hover border border-gray-100 group">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-14 h-14 rounded-2xl bg-linear-to-br ${f.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <Icon size={26} className="text-white" />
                   </div>
                   <h3 className="font-bold text-gray-900 text-lg mb-3">{f.title}</h3>
@@ -714,7 +757,7 @@ export default function HomePage() {
       {/* ─── FOOTER ──────────────────────────────────── */}
       <footer id="contact" className="bg-[#0F172A] text-white py-16 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-white/[0.06]">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-white/6">
             {/* Brand */}
             <div>
               <div className="flex items-center gap-3 mb-5">
@@ -768,9 +811,9 @@ export default function HomePage() {
             <div>
               <h4 className="text-white font-semibold text-sm mb-5">Liên hệ</h4>
               <ul className="space-y-3 text-sm text-gray-400">
-                <li className="flex items-center gap-2.5"><Mail size={14} className="text-violet-400 flex-shrink-0" /> smartdorm@email.com</li>
-                <li className="flex items-center gap-2.5"><Phone size={14} className="text-violet-400 flex-shrink-0" /> 0901 234 567</li>
-                <li className="flex items-center gap-2.5"><MapPin size={14} className="text-violet-400 flex-shrink-0" /> TP. Hồ Chí Minh</li>
+                <li className="flex items-center gap-2.5"><Mail size={14} className="text-violet-400 shrink-0" /> smartdorm@email.com</li>
+                <li className="flex items-center gap-2.5"><Phone size={14} className="text-violet-400 shrink-0" /> 0901 234 567</li>
+                <li className="flex items-center gap-2.5"><MapPin size={14} className="text-violet-400 shrink-0" /> TP. Hồ Chí Minh</li>
               </ul>
             </div>
           </div>

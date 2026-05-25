@@ -1,0 +1,10 @@
+cd m:\SmartDorm\backend
+dotnet run
+
+cd m:\SmartDorm\frontend
+
+npm run dev
+
+Tên đăng nhập (Username): admin
+Mật khẩu (Password): 123456
+Vai trò (Role): ADMIN

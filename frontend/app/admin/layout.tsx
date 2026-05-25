@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <p className="text-xs text-gray-400 mb-1">Đăng nhập với tư cách</p>
           <p className="text-sm font-medium text-white">Admin</p>
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => { localStorage.clear(); router.push("/"); }}
             className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
           >
             <LogOut size={12} />

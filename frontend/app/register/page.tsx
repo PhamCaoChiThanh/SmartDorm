@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { fetchAPI } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,28 +42,44 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    try {
+      // Gọi API đăng ký của Backend C#
+      await fetchAPI("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          role: "TENANT",
+        }),
+      });
 
-    const exists = users.find((u: any) => u.email === form.email);
-    if (exists) {
-      setError("Email này đã được đăng ký!");
+      // Để tương thích ngược với local mock (nếu có phần nào khác trên UI cần):
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const exists = users.find((u: any) => u.email === form.email);
+      if (!exists) {
+        users.push({
+          fullName: form.fullName,
+          cccd: form.cccd,
+          phone: form.phone,
+          email: form.email,
+          username: form.username,
+          password: form.password,
+          role: "TENANT",
+        });
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+
+      router.push("/login");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Đăng ký thất bại. Vui lòng kiểm tra lại kết nối đến Backend.");
+      }
+    } finally {
       setLoading(false);
-      return;
     }
-
-    users.push({
-      fullName: form.fullName,
-      cccd: form.cccd,
-      phone: form.phone,
-      email: form.email,
-      username: form.username,
-      password: form.password,
-      role: "TENANT",
-    });
-
-    localStorage.setItem("users", JSON.stringify(users));
-    setLoading(false);
-    router.push("/login");
   };
 
   return (

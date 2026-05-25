@@ -1,0 +1,51 @@
+using Microsoft.EntityFrameworkCore;
+using SmartDorm.Api.Models;
+
+namespace SmartDorm.Api.Data
+{
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Tenant> Tenants { get; set; } = null!;
+        public DbSet<Room> Rooms { get; set; } = null!;
+        public DbSet<Contract> Contracts { get; set; } = null!;
+        public DbSet<Invoice> Invoices { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
+        public DbSet<UtilityUsage> UtilityUsages { get; set; } = null!;
+        public DbSet<Vehicle> Vehicles { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Configure enums to be stored as strings in EF Core
+            modelBuilder.Entity<User>()
+                .Property(e => e.Role)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Room>()
+                .Property(e => e.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Contract>()
+                .Property(e => e.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Invoice>()
+                .Property(e => e.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<UtilityUsage>()
+                .Property(e => e.Type)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Vehicle>()
+                .Property(e => e.Type)
+                .HasConversion<string>();
+        }
+    }
+}

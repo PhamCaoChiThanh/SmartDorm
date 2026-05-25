@@ -22,7 +22,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           <span className="font-bold text-blue-600">SmartDorm</span>
         </div>
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => { localStorage.clear(); router.push("/"); }}
           className="text-sm text-red-500 hover:underline"
         >
           Đăng xuất

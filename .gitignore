@@ -23,11 +23,17 @@ Thumbs.db
 
 # Documentation
 Implementation Plan.docx
-<<<<<<< HEAD
-backend/
-frontend/
-=======
 .github\workflows.terraform/  
 *.zip  
-terraform.tfstate* 
->>>>>>> origin/tri
+terraform.tfstate*
+
+# .NET Ignores
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+
+# Next.js Ignores
+**/node_modules/
+**/.next/
+**/out/

@@ -2,6 +2,7 @@
 
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { fetchAPI } from "@/lib/api";
 import {
   Home, MapPin, Users, Camera, Wifi, Wind, ShieldCheck,
   WashingMachine, Fingerprint, CalendarDays, Phone, Mail,
@@ -28,7 +29,7 @@ function AmenityIcon({ label }: { label: string }) {
 
 // ── RoomData type ─────────────────────────────────────────────────────────────
 type RoomData = {
-  id: number;
+  id: number | string;
   name: string;
   area: string;
   price: number;
@@ -119,7 +120,7 @@ export default function RoomDetailPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const id = Number(params.id);
+  const rawId = params.id as string;
 
   const [room, setRoom] = useState<RoomData | null>(null);
   const [activeImage, setActiveImage] = useState(0);
@@ -127,6 +128,8 @@ export default function RoomDetailPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentName, setCurrentName] = useState<string | null>(null);
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
 
   const [scheduleForm, setScheduleForm] = useState({ name: "", phone: "", people: "1", vehicles: "0", visitDate: "", moveDate: "", note: "" });
   const [registerForm, setRegisterForm] = useState({ people: "1", cccd: "", moveDate: "", vehicle: "", note: "" });
@@ -134,26 +137,68 @@ export default function RoomDetailPage() {
 
   useEffect(() => {
     // 1. Tìm trong dữ liệu tĩnh trước
-    const staticMatch = staticRoomsData.find((r) => r.id === id);
+    const staticMatch = staticRoomsData.find((r) => String(r.id) === rawId);
     if (staticMatch) {
       setRoom(staticMatch);
     } else {
       // 2. Không có → tìm trong ownerListings từ localStorage
       try {
         const ownerListings: any[] = JSON.parse(localStorage.getItem("ownerListings") || "[]");
-        const ownerMatch = ownerListings.find((l) => l.id === id);
-        if (ownerMatch) setRoom(normalizeOwnerListing(ownerMatch));
+        const ownerMatch = ownerListings.find((l) => String(l.id) === rawId);
+        if (ownerMatch) {
+          setRoom(normalizeOwnerListing(ownerMatch));
+          return;
+        }
       } catch {
         // localStorage không khả dụng hoặc JSON lỗi — bỏ qua
       }
+
+      // 3. Không có nữa → Gọi API của backend
+      const fetchRoomFromBackend = async () => {
+        try {
+          const response = await fetchAPI(`/rooms/${rawId}`);
+          if (response.success && response.data) {
+            const r = response.data;
+            const mappedRoom: RoomData = {
+              id: r.id,
+              name: `Phòng KTX ${r.roomNumber || r.room_number || ""}`,
+              area: `Khu KTX - Phòng ${r.roomNumber || r.room_number || ""}`,
+              price: r.basePrice || r.base_price || 1500000,
+              capacity: r.capacity || 4,
+              available: r.status === "AVAILABLE" || r.status === "TRỐNG" ? (r.capacity || 4) : 0,
+              images: r.image ? [r.image] : [
+                "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop"
+              ],
+              amenities: r.amenities || ["Camera 24/7", "Wifi", "Máy lạnh", "Máy giặt"],
+              description: r.description || `Phòng KTX số ${r.roomNumber || r.room_number || ""} rộng rãi, đầy đủ tiện nghi, an ninh đảm bảo.`,
+              manager: r.manager || "Ban quản lý KTX",
+              phone: r.phone || "0901234567",
+              email: r.email || "manager@smartdorm.com",
+              status: r.status,
+            };
+            setRoom(mappedRoom);
+          }
+        } catch (err) {
+          console.error("Failed to fetch room details from API", err);
+        }
+      };
+
+      fetchRoomFromBackend();
     }
 
+    const name = localStorage.getItem("currentName");
+    if (name) setCurrentName(name);
     const role = localStorage.getItem("currentRole");
-    setIsLoggedIn(!!role);
+    if (role) {
+      setCurrentRole(role);
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
     if (searchParams.get("action") === "register" && role) {
       setShowRegisterModal(true);
     }
-  }, [id]);
+  }, [rawId]);
 
   if (!room) return <div className="p-8 text-center text-gray-500">Không tìm thấy phòng!</div>;
 
@@ -194,7 +239,12 @@ export default function RoomDetailPage() {
     setTimeout(() => {
       setShowRegisterModal(false);
       setSubmitted(false);
-      router.push("/owner/dashboard");
+      const role = localStorage.getItem("currentRole");
+      if (role === "TENANT") {
+        router.push("/tenant/contract");
+      } else {
+        router.push("/owner/dashboard");
+      }
     }, 1500);
   };
 
@@ -216,11 +266,39 @@ export default function RoomDetailPage() {
 
           <div className="flex gap-3 items-center">
             {isLoggedIn ? (
-              <button onClick={() => router.push("/owner/dashboard")}
-                className="text-sm text-white px-5 py-2 rounded-full font-semibold transition hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
-                Quản lý
-              </button>
+              <>
+                <div className="hidden md:flex items-center gap-2 text-sm text-gray-600 bg-white border border-gray-100 px-3 py-1.5 rounded-full shadow-sm">
+                  <User size={13} className="text-purple-500" />
+                  <span className="font-medium">{currentName || "Người dùng"}</span>
+                </div>
+                {(currentRole === "ADMIN" || currentRole === "MANAGER") && (
+                  <button onClick={() => router.push("/admin/dashboard")}
+                    className="text-sm text-white px-5 py-2 rounded-full font-semibold transition hover:opacity-90 shadow-md"
+                    style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
+                    Quản lý
+                  </button>
+                )}
+                {currentRole === "OWNER" && (
+                  <button onClick={() => router.push("/owner/dashboard")}
+                    className="text-sm text-white px-5 py-2 rounded-full font-semibold transition hover:opacity-90 shadow-md"
+                    style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
+                    Quản lý
+                  </button>
+                )}
+                <button onClick={() => {
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("user");
+                  localStorage.removeItem("currentEmail");
+                  localStorage.removeItem("currentName");
+                  localStorage.removeItem("currentRole");
+                  setCurrentName(null);
+                  setCurrentRole(null);
+                  setIsLoggedIn(false);
+                  router.push("/");
+                }} className="text-sm text-gray-400 hover:text-red-500 transition-colors font-medium ml-2">
+                  Đăng xuất
+                </button>
+              </>
             ) : (
               <>
                 <button onClick={() => router.push("/login")}
@@ -397,7 +475,7 @@ export default function RoomDetailPage() {
             </div>
 
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2 text-xs text-amber-700">
-              <Lightbulb size={13} className="mt-0.5 flex-shrink-0" />
+              <Lightbulb size={13} className="mt-0.5 shrink-0" />
               Đăng nhập để xem số điện thoại và đăng ký thuê phòng
             </div>
           </div>
