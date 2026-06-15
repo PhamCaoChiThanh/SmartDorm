@@ -46,52 +46,7 @@ type RoomData = {
   ownerEmail?: string;
 };
 
-// ── dữ liệu tĩnh giữ nguyên ──────────────────────────────────────────────────
-const staticRoomsData: RoomData[] = [
-  { id: 1, name: "Phòng KTX A1", area: "Khu A - Tầng 1", price: 1500000, capacity: 4, available: 2,
-    images: [
-      "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop",
-      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=500&fit=crop",
-      "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&h=500&fit=crop",
-    ],
-    amenities: ["Camera 24/7", "Wifi tốc độ cao", "Máy lạnh", "Nhà vệ sinh riêng", "Máy giặt chung", "Khóa vân tay"],
-    description: "Phòng KTX Khu A thoáng mát, sạch sẽ, đầy đủ tiện nghi. Phù hợp cho sinh viên năm nhất và năm hai. Gần khu học tập và căng tin.",
-    manager: "Nguyễn Văn Quản", phone: "0901234567", email: "manager@smartdorm.com",
-  },
-  { id: 2, name: "Phòng KTX B3", area: "Khu B - Tầng 3", price: 1800000, capacity: 2, available: 1,
-    images: [
-      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=500&fit=crop",
-      "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop",
-    ],
-    amenities: ["Camera 24/7", "Wifi tốc độ cao", "Máy lạnh", "Khóa vân tay"],
-    description: "Phòng 2 người yên tĩnh, view đẹp tầng 3. Thích hợp cho sinh viên cần không gian học tập riêng tư.",
-    manager: "Trần Thị Quản", phone: "0912345678", email: "manager2@smartdorm.com",
-  },
-  { id: 3, name: "Phòng KTX C2", area: "Khu C - Tầng 2", price: 2000000, capacity: 2, available: 0,
-    images: ["https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&h=500&fit=crop"],
-    amenities: ["Camera 24/7", "Wifi tốc độ cao", "Máy lạnh"],
-    description: "Phòng cao cấp khu C, đã đầy chỗ.",
-    manager: "Lê Văn Quản", phone: "0923456789", email: "manager3@smartdorm.com",
-  },
-  { id: 4, name: "Phòng KTX A3", area: "Khu A - Tầng 3", price: 1500000, capacity: 4, available: 3,
-    images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop"],
-    amenities: ["Camera 24/7", "Wifi", "Máy lạnh", "Máy giặt"],
-    description: "Phòng rộng rãi 4 người, còn 3 chỗ trống.",
-    manager: "Nguyễn Văn Quản", phone: "0901234567", email: "manager@smartdorm.com",
-  },
-  { id: 5, name: "Phòng KTX B1", area: "Khu B - Tầng 1", price: 1800000, capacity: 2, available: 2,
-    images: ["https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=500&fit=crop"],
-    amenities: ["Camera 24/7", "Wifi", "Máy lạnh", "Khóa vân tay"],
-    description: "Phòng 2 người tầng 1, tiện di chuyển.",
-    manager: "Trần Thị Quản", phone: "0912345678", email: "manager2@smartdorm.com",
-  },
-  { id: 6, name: "Phòng KTX D2", area: "Khu D - Tầng 2", price: 2200000, capacity: 1, available: 1,
-    images: ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=500&fit=crop"],
-    amenities: ["Camera 24/7", "Wifi cao cấp", "Máy lạnh", "Khóa vân tay", "WC riêng"],
-    description: "Phòng 1 người cao cấp, riêng tư tuyệt đối.",
-    manager: "Lê Văn Quản", phone: "0923456789", email: "manager3@smartdorm.com",
-  },
-];
+// ── dữ liệu tĩnh đã được loại bỏ để tải hoàn toàn từ database ──────────────────
 
 // ── helper: chuẩn hóa owner listing → RoomData ───────────────────────────────
 function normalizeOwnerListing(l: any): RoomData {
@@ -138,12 +93,37 @@ export default function RoomDetailPage() {
   const [registerError, setRegisterError] = useState("");
 
   useEffect(() => {
-    // 1. Tìm trong dữ liệu tĩnh trước
-    const staticMatch = staticRoomsData.find((r) => String(r.id) === rawId);
-    if (staticMatch) {
-      setRoom(staticMatch);
-    } else {
-      // 2. Không có → tìm trong ownerListings từ localStorage
+    const fetchRoomData = async () => {
+      // 1. Gọi API của backend trước
+      try {
+        const response = await fetchAPI(`/rooms/${rawId}`);
+        if (response.success && response.data) {
+          const r = response.data;
+          const mappedRoom: RoomData = {
+            id: r.id,
+            name: `Phòng KTX ${r.roomNumber || r.room_number || ""}`,
+            area: `Khu KTX - Phòng ${r.roomNumber || r.room_number || ""}`,
+            price: r.basePrice || r.base_price || 1500000,
+            capacity: r.capacity || 4,
+            available: r.status === "MAINTENANCE" ? 0 : ((r.capacity || 4) - (r.currentOccupants || 0)),
+            images: r.image ? [r.image] : [
+              "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop"
+            ],
+            amenities: r.amenities || ["Camera 24/7", "Wifi", "Máy lạnh", "Máy giặt"],
+            description: r.description || `Phòng KTX số ${r.roomNumber || r.room_number || ""} rộng rãi, đầy đủ tiện nghi, an ninh đảm bảo.`,
+            manager: r.manager || "Ban quản lý KTX",
+            phone: r.phone || "0901234567",
+            email: r.email || "manager@smartdorm.com",
+            status: r.status,
+          };
+          setRoom(mappedRoom);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch room details from API", err);
+      }
+
+      // 2. Không thành công → tìm trong ownerListings từ localStorage làm fallback
       try {
         const ownerListings: any[] = JSON.parse(localStorage.getItem("ownerListings") || "[]");
         const ownerMatch = ownerListings.find((l) => String(l.id) === rawId);
@@ -154,39 +134,9 @@ export default function RoomDetailPage() {
       } catch {
         // localStorage không khả dụng hoặc JSON lỗi — bỏ qua
       }
+    };
 
-      // 3. Không có nữa → Gọi API của backend
-      const fetchRoomFromBackend = async () => {
-        try {
-          const response = await fetchAPI(`/rooms/${rawId}`);
-          if (response.success && response.data) {
-            const r = response.data;
-            const mappedRoom: RoomData = {
-              id: r.id,
-              name: `Phòng KTX ${r.roomNumber || r.room_number || ""}`,
-              area: `Khu KTX - Phòng ${r.roomNumber || r.room_number || ""}`,
-              price: r.basePrice || r.base_price || 1500000,
-              capacity: r.capacity || 4,
-              available: r.status === "MAINTENANCE" ? 0 : ((r.capacity || 4) - (r.currentOccupants || 0)),
-              images: r.image ? [r.image] : [
-                "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop"
-              ],
-              amenities: r.amenities || ["Camera 24/7", "Wifi", "Máy lạnh", "Máy giặt"],
-              description: r.description || `Phòng KTX số ${r.roomNumber || r.room_number || ""} rộng rãi, đầy đủ tiện nghi, an ninh đảm bảo.`,
-              manager: r.manager || "Ban quản lý KTX",
-              phone: r.phone || "0901234567",
-              email: r.email || "manager@smartdorm.com",
-              status: r.status,
-            };
-            setRoom(mappedRoom);
-          }
-        } catch (err) {
-          console.error("Failed to fetch room details from API", err);
-        }
-      };
-
-      fetchRoomFromBackend();
-    }
+    fetchRoomData();
 
     const name = localStorage.getItem("currentName");
     if (name) setCurrentName(name);
@@ -432,7 +382,7 @@ export default function RoomDetailPage() {
             <div className="mt-4 p-4 bg-purple-50 rounded-xl flex justify-between items-center">
               <div>
                 <span className="text-3xl font-bold text-purple-600">{room.price.toLocaleString("vi-VN")}đ</span>
-                <span className="text-gray-400 text-sm">/tháng</span>
+                <span className="text-gray-400 text-sm">/ người / tháng</span>
               </div>
               <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${room.available > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
                 {room.available > 0 ? "Còn trống" : "Đã đầy"}
@@ -630,7 +580,7 @@ export default function RoomDetailPage() {
             </div>
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
               <Users size={14} className="text-purple-500" />
-              <span><strong>{room.name}</strong> — {room.price.toLocaleString("vi-VN")}đ/tháng</span>
+              <span><strong>{room.name}</strong> — {room.price.toLocaleString("vi-VN")}đ/người/tháng</span>
             </div>
             {submitted ? (
               <div className="text-center py-8">

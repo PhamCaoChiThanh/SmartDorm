@@ -97,6 +97,20 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        context.Database.ExecuteSqlRaw("ALTER TABLE maintenances ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMPTZ;");
+        context.Database.ExecuteSqlRaw("ALTER TABLE maintenances ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error updating database schema: {ex.Message}");
+    }
+}
+
 app.MapControllers();
 
 // Root welcome endpoint

@@ -434,6 +434,12 @@ namespace SmartDorm.Api.Models
         [MaxLength(100)]
         public string? AssignedTo { get; set; }
 
+        [Column("scheduled_for")]
+        public DateTimeOffset? ScheduledFor { get; set; }
+
+        [Column("completed_at")]
+        public DateTimeOffset? CompletedAt { get; set; }
+
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

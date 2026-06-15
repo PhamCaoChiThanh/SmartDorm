@@ -43,7 +43,7 @@ export default function OwnerContract() {
           <h2 className="font-bold text-gray-900 mb-4">💰 Chi tiết giá</h2>
           <div className="space-y-3">
             {[
-              { label: "Tiền phòng", value: `${contract.basePrice.toLocaleString("vi-VN")}đ / tháng` },
+              { label: "Tiền phòng", value: `${contract.basePrice.toLocaleString("vi-VN")}đ / người / tháng` },
               { label: "Giá điện", value: `${contract.electricityPrice.toLocaleString("vi-VN")}đ / số` },
               { label: "Giá nước", value: `${contract.waterPrice.toLocaleString("vi-VN")}đ / khối` },
               { label: "Phí rác", value: `${contract.garbageFee.toLocaleString("vi-VN")}đ / tháng` },

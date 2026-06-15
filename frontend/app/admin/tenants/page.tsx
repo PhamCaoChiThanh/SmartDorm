@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { fetchAPI } from "@/lib/api";
-import { AlertCircle, Plus, Edit2, Trash2, X, Search } from "lucide-react";
+import { exportToCSV } from "@/lib/export";
+import { AlertCircle, Plus, Edit2, Trash2, X, Search, FileSpreadsheet } from "lucide-react";
 
 export default function AdminTenants() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -187,6 +188,31 @@ export default function AdminTenants() {
     );
   }
 
+  const handleExportExcel = () => {
+    const headers = [
+      "Họ Và Tên",
+      "Số CCCD",
+      "Số Điện Thoại",
+      "Email",
+      "Số Phòng Đang Ở"
+    ];
+    const keys = [
+      "fullName",
+      "cccd",
+      "phone",
+      "email",
+      "room_number"
+    ];
+    const formatted = filtered.map(t => ({
+      fullName: t.fullName || t.FullName || "",
+      cccd: t.cccd || t.Cccd || "",
+      phone: t.phone || t.Phone || "",
+      email: t.email || t.Email || "",
+      room_number: t.room_number || t.roomNumber || t.RoomNumber || "Chưa xếp phòng"
+    }));
+    exportToCSV(formatted, "DanhSachKhachThue_TamTru", headers, keys);
+  };
+
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
@@ -194,16 +220,25 @@ export default function AdminTenants() {
           <h2 className="text-2xl font-bold text-gray-800">👥 Quản lý Tenant</h2>
           <p className="text-sm text-gray-500">{tenants.length} người thuê</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Thêm người thuê
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportExcel}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          >
+            <FileSpreadsheet size={16} />
+            Xuất Excel
+          </button>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateModal(true);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Thêm người thuê
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -76,7 +76,7 @@ export default function OwnerListings() {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
           <div className="flex gap-3 items-center flex-wrap">
             <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 min-w-[250px]">
-              <Search size={15} className="text-gray-400 flex-shrink-0" />
+              <Search size={15} className="text-gray-400 shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -164,7 +164,7 @@ export default function OwnerListings() {
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-lg" style={{ color: "#7C3AED" }}>
                       {listing.price.toLocaleString("vi-VN")}đ
-                      <span className="text-xs text-gray-400 font-normal">/tháng</span>
+                      <span className="text-xs text-gray-400 font-normal">/người/tháng</span>
                     </span>
                     <div className="flex gap-2">
                       <button onClick={() => router.push(`/rooms/${listing.id}`)}

@@ -85,6 +85,13 @@ namespace SmartDorm.Api.Controllers
                     return NotFound(new { success = false, message = "Không tìm thấy phòng." });
                 }
 
+                // Verify room has active contracts
+                var hasActiveContract = await _context.Contracts.AnyAsync(c => c.RoomId == dto.RoomId && c.Status == ContractStatus.ACTIVE);
+                if (!hasActiveContract)
+                {
+                    return BadRequest(new { success = false, message = "Không thể ghi nhận chỉ số cho phòng chưa có người thuê." });
+                }
+
                 // Verify not already recorded
                 var alreadyExists = await _context.UtilityUsages.AnyAsync(uu =>
                     uu.RoomId == dto.RoomId &&
@@ -115,6 +122,74 @@ namespace SmartDorm.Api.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = "Lỗi khi ghi nhận chỉ số điện nước", error = ex.Message });
+            }
+        }
+
+        public class UpdateUtilityDto
+        {
+            public int OldIndex { get; set; }
+            public int NewIndex { get; set; }
+            public int BillingMonth { get; set; }
+            public int BillingYear { get; set; }
+            public string Type { get; set; } = string.Empty;
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUsage(Guid id, [FromBody] UpdateUtilityDto dto)
+        {
+            if (!Enum.TryParse<UtilityType>(dto.Type, true, out var utilityType))
+            {
+                return BadRequest(new { success = false, message = "Loại tiện ích không hợp lệ. Phải là WATER hoặc ELECTRIC." });
+            }
+
+            if (dto.NewIndex < dto.OldIndex)
+            {
+                return BadRequest(new { success = false, message = "Chỉ số mới không được nhỏ hơn chỉ số cũ." });
+            }
+
+            try
+            {
+                var usage = await _context.UtilityUsages.FindAsync(id);
+                if (usage == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy thông tin điện nước để cập nhật" });
+                }
+
+                usage.OldIndex = dto.OldIndex;
+                usage.NewIndex = dto.NewIndex;
+                usage.BillingMonth = dto.BillingMonth;
+                usage.BillingYear = dto.BillingYear;
+                usage.Type = utilityType;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Cập nhật chỉ số thành công", data = usage });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi cập nhật chỉ số điện nước", error = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUsage(Guid id)
+        {
+            try
+            {
+                var usage = await _context.UtilityUsages.FindAsync(id);
+                if (usage == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy thông tin điện nước để xóa" });
+                }
+
+                _context.UtilityUsages.Remove(usage);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Xóa chỉ số thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi xóa chỉ số điện nước", error = ex.Message });
             }
         }
     }

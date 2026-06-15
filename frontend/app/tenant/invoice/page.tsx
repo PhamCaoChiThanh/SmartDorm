@@ -113,6 +113,58 @@ export default function TenantInvoice() {
           });
         }
 
+        // 3. Thông báo cho bảo trì (ngày, giờ, trạng thái)
+        try {
+          const maintRes = await fetchAPI("/maintenances");
+          if (maintRes.success && Array.isArray(maintRes.data)) {
+            maintRes.data.forEach((m: any) => {
+              const isDone = m.status === "DONE";
+              const dateStr = new Date(m.createdAt).toLocaleDateString("vi-VN", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              });
+
+              let scheduleInfo = "";
+              if (m.scheduled_for || m.scheduledFor) {
+                const schedDate = new Date(m.scheduled_for || m.scheduledFor).toLocaleDateString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
+                scheduleInfo = ` - Lịch hẹn: ${schedDate}`;
+              }
+
+              let completionInfo = "";
+              if (m.completed_at || m.completedAt) {
+                const compDate = new Date(m.completed_at || m.completedAt).toLocaleDateString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
+                completionInfo = ` - Hoàn thành: ${compDate}`;
+              }
+
+              const statusText = m.status === "OPEN" ? "Chờ xử lý" : m.status === "IN_PROGRESS" ? "Đang xử lý" : "Đã hoàn thành";
+              
+              dynamicNotifications.push({
+                id: notifId++,
+                message: `🔧 Bảo trì phòng ${m.room_number || "—"}: ${m.description}${scheduleInfo}${completionInfo} (${statusText})`,
+                time: dateStr,
+                read: isDone
+              });
+            });
+          }
+        } catch (maintErr) {
+          console.error("Lỗi khi tải thông báo bảo trì:", maintErr);
+        }
+
         setNotifications(dynamicNotifications);
 
         if (invoices.length > 0) {

@@ -263,6 +263,21 @@ namespace SmartDorm.Api.Controllers
                 if (room == null)
                     return BadRequest(new { success = false, message = "Không tìm thấy thông tin phòng." });
 
+                // Find all active occupants (contracts) in the same room to send them the bill
+                var activeContracts = await _context.Contracts
+                    .Include(c => c.Tenant)
+                    .Where(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE)
+                    .ToListAsync();
+
+                var validContracts = activeContracts
+                    .Where(c => c.Tenant != null && !string.IsNullOrEmpty(c.Tenant.Email))
+                    .ToList();
+
+                if (!validContracts.Any())
+                {
+                    return BadRequest(new { success = false, message = $"Không tìm thấy thành viên nào có email trong phòng {room.RoomNumber}." });
+                }
+
                 // Fetch utility usages for this billing period
                 var usages = await _context.UtilityUsages
                     .Where(u => u.RoomId == room.Id && u.BillingMonth == invoice.BillingMonth && u.BillingYear == invoice.BillingYear)
@@ -271,26 +286,104 @@ namespace SmartDorm.Api.Controllers
                 var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages);
                 var fileName = $"HoaDon_Phong{room.RoomNumber}_T{invoice.BillingMonth}_{invoice.BillingYear}.pdf";
 
-                string subject = $"📄 Hóa đơn tiền phòng tháng {invoice.BillingMonth}/{invoice.BillingYear} - Phòng {room.RoomNumber}";
-                string body = $"<p>Xin chào <b>{tenant.FullName}</b>,</p>" +
-                              $"<p>Ban quản lý KTX SmartDorm gửi đến bạn <b>Hóa đơn tiền phòng</b> tháng <b>{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
-                              $"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-size:14px;'>" +
-                              $"<tr style='background:#1e3a5f;color:white'><th>Khoản mục</th><th>Thành tiền</th></tr>" +
-                              $"<tr><td>Tiền phòng</td><td><b>{invoice.RoomFee:N0} VND</b></td></tr>" +
-                              $"<tr style='background:#f8f9fa'><td>Điện</td><td><b>{invoice.ElectricFee:N0} VND</b></td></tr>" +
-                              $"<tr><td>Nước</td><td><b>{invoice.WaterFee:N0} VND</b></td></tr>" +
-                              $"<tr style='background:#1e3a5f;color:white'><th>TỔNG CỘNG</th><th>{invoice.TotalAmount:N0} VND</th></tr>" +
-                              $"</table>" +
-                              $"<p>⏰ Hạn thanh toán: ngày <b>05/{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
-                              $"<p>📎 Hóa đơn chi tiết được đính kèm theo email này.</p>";
+                foreach (var contract in validContracts)
+                {
+                    var recipient = contract.Tenant!;
+                    string subject = $"📄 Hóa đơn tiền phòng tháng {invoice.BillingMonth}/{invoice.BillingYear} - Phòng {room.RoomNumber}";
+                    string body = $"<p>Xin chào <b>{recipient.FullName}</b>,</p>" +
+                                  $"<p>Ban quản lý KTX SmartDorm gửi đến bạn <b>Hóa đơn tiền phòng</b> tháng <b>{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
+                                  $"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-size:14px;'>" +
+                                  $"<tr style='background:#1e3a5f;color:white'><th>Khoản mục</th><th>Thành tiền</th></tr>" +
+                                  $"<tr><td>Tiền phòng</td><td><b>{invoice.RoomFee:N0} VND</b></td></tr>" +
+                                  $"<tr style='background:#f8f9fa'><td>Điện</td><td><b>{invoice.ElectricFee:N0} VND</b></td></tr>" +
+                                  $"<tr><td>Nước</td><td><b>{invoice.WaterFee:N0} VND</b></td></tr>" +
+                                  $"<tr style='background:#1e3a5f;color:white'><th>TỔNG CỘNG</th><th>{invoice.TotalAmount:N0} VND</th></tr>" +
+                                  $"</table>" +
+                                  $"<p>⏰ Hạn thanh toán: ngày <b>05/{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
+                                  $"<p>📎 Hóa đơn chi tiết được đính kèm theo email này.</p>";
 
-                await _emailService.SendEmailAsync(tenant.Email, subject, body, pdfBytes, fileName);
+                    await _emailService.SendEmailAsync(recipient.Email!, subject, body, pdfBytes, fileName);
+                }
 
-                return Ok(new { success = true, message = $"Gửi hóa đơn đến {tenant.Email} thành công!" });
+                var sentEmailsList = string.Join(", ", validContracts.Select(c => c.Tenant!.Email));
+                return Ok(new { success = true, message = $"Gửi hóa đơn đến các thành viên trong phòng ({sentEmailsList}) thành công!" });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = "Lỗi khi gửi hóa đơn", error = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
+        public class UpdateInvoiceDto
+        {
+            public decimal? RoomFee { get; set; }
+            public decimal? ElectricFee { get; set; }
+            public decimal? WaterFee { get; set; }
+            public decimal PaidAmount { get; set; }
+            public string Status { get; set; } = string.Empty;
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
+        public async Task<IActionResult> UpdateInvoice(Guid id, [FromBody] UpdateInvoiceDto dto)
+        {
+            try
+            {
+                var invoice = await _context.Invoices.FindAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
+                }
+
+                if (Enum.TryParse<InvoiceStatus>(dto.Status, true, out var status))
+                {
+                    invoice.Status = status;
+                }
+
+                invoice.RoomFee = dto.RoomFee;
+                invoice.ElectricFee = dto.ElectricFee;
+                invoice.WaterFee = dto.WaterFee;
+                invoice.PaidAmount = dto.PaidAmount;
+                invoice.TotalAmount = (dto.RoomFee ?? 0) + (dto.ElectricFee ?? 0) + (dto.WaterFee ?? 0);
+                invoice.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Cập nhật hóa đơn thành công", data = invoice });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi cập nhật hóa đơn", error = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
+        public async Task<IActionResult> DeleteInvoice(Guid id)
+        {
+            try
+            {
+                var invoice = await _context.Invoices.FindAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
+                }
+
+                // Delete associated payments first to prevent foreign key constraint violation
+                var payments = await _context.Payments.Where(p => p.InvoiceId == id).ToListAsync();
+                if (payments.Any())
+                {
+                    _context.Payments.RemoveRange(payments);
+                }
+
+                _context.Invoices.Remove(invoice);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Xóa hóa đơn thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi xóa hóa đơn", error = ex.Message });
             }
         }
     }

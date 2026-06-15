@@ -12,16 +12,16 @@ const pool = new Pool({
 
 async function main() {
   try {
-    const password = 'Password123!';
+    const password = '123456';
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
     console.log(`Hashing password "${password}"...`);
     console.log(`Generated hash: ${hash}`);
 
-    // Update chithanh_test and nguyenvana
+    // Update admin
     const res = await pool.query(
-      "UPDATE users SET password_hash = $1 WHERE username IN ('chithanh_test', 'nguyenvana')",
+      "UPDATE users SET password_hash = $1 WHERE username = 'admin'",
       [hash]
     );
     console.log(`Successfully updated password for ${res.rowCount} users.`);

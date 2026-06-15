@@ -98,7 +98,7 @@ export default function TenantContract() {
               <h2 className="font-semibold mb-3">💰 Chi tiết giá</h2>
               <div className="space-y-2">
                 {[
-                  { label: "Tiền phòng", value: `${(room.basePrice || 0).toLocaleString("vi-VN")}đ / tháng` },
+                  { label: "Tiền phòng", value: `${(room.basePrice || 0).toLocaleString("vi-VN")}đ / người / tháng` },
                   { label: "Giá điện", value: `${(room.electricityPrice || 0).toLocaleString("vi-VN")}đ / số` },
                   { label: "Giá nước", value: `${(room.waterPrice || 0).toLocaleString("vi-VN")}đ / khối` },
                   { label: "Phí rác", value: `${(room.garbageFee || 0).toLocaleString("vi-VN")}đ / tháng` },

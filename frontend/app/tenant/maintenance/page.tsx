@@ -146,6 +146,40 @@ export default function TenantMaintenance() {
                       minute: "2-digit"
                     })}
                   </p>
+                  {h.assignedTo && (
+                    <p className="text-xs text-blue-600 font-semibold mt-1 flex items-center gap-1">
+                      <span>🔧 Nhân viên:</span>
+                      <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[11px]">{h.assignedTo}</span>
+                    </p>
+                  )}
+                  {(h.scheduled_for || h.scheduledFor) && (
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <span className="font-semibold">📅 Lịch hẹn:</span>
+                      <span>
+                        {new Date(h.scheduled_for || h.scheduledFor).toLocaleDateString("vi-VN", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                    </p>
+                  )}
+                  {(h.completed_at || h.completedAt) && (
+                    <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                      <span className="font-semibold">✅ Hoàn thành:</span>
+                      <span>
+                        {new Date(h.completed_at || h.completedAt).toLocaleDateString("vi-VN", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                   h.status === "OPEN"

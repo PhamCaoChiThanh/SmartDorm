@@ -169,6 +169,8 @@ export default function AdminContracts() {
     return matchFilter && matchSearch;
   });
 
+
+
   if (loading) {
     return (
       <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4">
