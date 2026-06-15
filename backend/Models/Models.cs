@@ -149,6 +149,9 @@ namespace SmartDorm.Api.Models
 
         [Column("updated_at")]
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [NotMapped]
+        public int CurrentOccupants { get; set; }
     }
 
     [Table("contracts")]
@@ -178,6 +181,9 @@ namespace SmartDorm.Api.Models
 
         [Column("status")]
         public ContractStatus Status { get; set; } = ContractStatus.ACTIVE;
+
+        [Column("was_renewed")]
+        public bool WasRenewed { get; set; } = false;
 
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

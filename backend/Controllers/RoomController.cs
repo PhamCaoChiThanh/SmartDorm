@@ -26,7 +26,31 @@ namespace SmartDorm.Api.Controllers
         {
             try
             {
-                var rooms = await _context.Rooms.OrderBy(r => r.RoomNumber).ToListAsync();
+                var roomsWithContracts = await _context.Rooms
+                    .GroupJoin(
+                        _context.Contracts.Where(c => c.Status == ContractStatus.ACTIVE),
+                        r => r.Id,
+                        c => c.RoomId,
+                        (r, contracts) => new {
+                            Room = r,
+                            ActiveContractsCount = contracts.Count()
+                        }
+                    )
+                    .OrderBy(x => x.Room.RoomNumber)
+                    .ToListAsync();
+
+                var rooms = roomsWithContracts.Select(x => {
+                    var r = x.Room;
+                    r.CurrentOccupants = x.ActiveContractsCount;
+                    if (r.Status != RoomStatus.MAINTENANCE)
+                    {
+                        r.Status = x.ActiveContractsCount >= r.Capacity 
+                            ? RoomStatus.OCCUPIED 
+                            : RoomStatus.AVAILABLE;
+                    }
+                    return r;
+                }).ToList();
+
                 return Ok(new { success = true, data = rooms });
             }
             catch (Exception ex)
@@ -46,6 +70,17 @@ namespace SmartDorm.Api.Controllers
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy phòng" });
                 }
+
+                // Dynamically sync status
+                var activeContractsCount = await _context.Contracts.CountAsync(c => c.RoomId == id && c.Status == ContractStatus.ACTIVE);
+                room.CurrentOccupants = activeContractsCount;
+                if (room.Status != RoomStatus.MAINTENANCE)
+                {
+                    room.Status = activeContractsCount >= room.Capacity 
+                        ? RoomStatus.OCCUPIED 
+                        : RoomStatus.AVAILABLE;
+                }
+
                 return Ok(new { success = true, data = room });
             }
             catch (Exception ex)

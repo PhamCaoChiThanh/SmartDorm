@@ -10,6 +10,7 @@ import {
   Users,
   Search,
   LogOut,
+  Receipt,
 } from "lucide-react";
 
 const menuItems = [
@@ -17,6 +18,7 @@ const menuItems = [
   { label: "Quản lý phòng", icon: <Home size={16} />, path: "/admin/rooms" },
   { label: "Yêu cầu thuê", icon: <ClipboardList size={16} />, path: "/admin/requests" },
   { label: "Hợp đồng", icon: <FileText size={16} />, path: "/admin/contracts" },
+  { label: "Hóa đơn", icon: <Receipt size={16} />, path: "/admin/invoices" },
   { label: "Điện nước", icon: <Zap size={16} />, path: "/admin/utility" },
   { label: "Tenant", icon: <Users size={16} />, path: "/admin/tenants" },
   { label: "Audit Logs", icon: <Search size={16} />, path: "/admin/audit" },

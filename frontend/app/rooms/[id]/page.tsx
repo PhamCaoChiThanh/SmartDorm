@@ -134,6 +134,8 @@ export default function RoomDetailPage() {
   const [scheduleForm, setScheduleForm] = useState({ name: "", phone: "", people: "1", vehicles: "0", visitDate: "", moveDate: "", note: "" });
   const [registerForm, setRegisterForm] = useState({ people: "1", cccd: "", moveDate: "", vehicle: "", note: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [registerError, setRegisterError] = useState("");
 
   useEffect(() => {
     // 1. Tìm trong dữ liệu tĩnh trước
@@ -165,7 +167,7 @@ export default function RoomDetailPage() {
               area: `Khu KTX - Phòng ${r.roomNumber || r.room_number || ""}`,
               price: r.basePrice || r.base_price || 1500000,
               capacity: r.capacity || 4,
-              available: r.status === "AVAILABLE" || r.status === "TRỐNG" ? (r.capacity || 4) : 0,
+              available: r.status === "MAINTENANCE" ? 0 : ((r.capacity || 4) - (r.currentOccupants || 0)),
               images: r.image ? [r.image] : [
                 "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=500&fit=crop"
               ],
@@ -264,15 +266,38 @@ export default function RoomDetailPage() {
     }, 1500);
   };
 
-  const [registerError, setRegisterError] = useState("");
-
   const handleRegisterSubmit = async () => {
     if (!registerForm.cccd || !registerForm.moveDate) {
       setRegisterError("Vui lòng điền đầy đủ CCCD và ngày chuyển vào.");
       return;
     }
+    if (!agreedTerms) {
+      setRegisterError("Bạn phải đọc và đồng ý với Điều khoản & Nội quy KTX.");
+      return;
+    }
     setRegisterError("");
     try {
+      // Automatically register the vehicle to profile if entered and not yet registered
+      if (registerForm.vehicle && registerForm.vehicle.trim()) {
+        try {
+          const vehiclesRes = await fetchAPI("/vehicles");
+          const exists = vehiclesRes.data?.some(
+            (v: any) => v.license_plate?.toLowerCase() === registerForm.vehicle.trim().toLowerCase()
+          );
+          if (!exists) {
+            await fetchAPI("/vehicles", {
+              method: "POST",
+              body: JSON.stringify({
+                licensePlate: registerForm.vehicle.trim(),
+                type: "MOTORBIKE", // default type
+              }),
+            });
+          }
+        } catch (vehErr) {
+          console.error("Lỗi khi tự động lưu biển số xe vào hồ sơ:", vehErr);
+        }
+      }
+
       const res = await fetchAPI("/requests", {
         method: "POST",
         body: JSON.stringify({
@@ -643,16 +668,44 @@ export default function RoomDetailPage() {
                   <textarea value={registerForm.note} onChange={(e) => setRegisterForm({ ...registerForm, note: e.target.value })}
                     rows={2} className={inputCls} placeholder="Yêu cầu đặc biệt..." />
                 </div>
+
+                {/* Điều khoản & Nội quy */}
+                <div className="border border-purple-100 rounded-xl p-3 bg-purple-50/50">
+                  <div className="text-xs font-bold text-purple-950 mb-1.5 flex items-center gap-1.5">
+                    📜 Điều khoản & Nội quy Ký túc xá
+                  </div>
+                  <div className="text-[11px] text-gray-600 max-h-24 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
+                    <p>1. <b>Giờ giấc sinh hoạt:</b> Mở cửa 05:00 - Đóng cửa 23:00 hàng ngày. Sinh viên đi trễ phải báo cáo bảo vệ.</p>
+                    <p>2. <b>An toàn & An ninh:</b> Không dẫn người lạ vào phòng qua đêm. Khóa vân tay là tài sản chung, không chia sẻ quyền truy cập.</p>
+                    <p>3. <b>Nội quy phòng:</b> Giữ gìn vệ sinh chung sạch sẽ. Không làm ồn gây ảnh hưởng đến phòng bên cạnh sau 22:00.</p>
+                    <p>4. <b>Phòng chống cháy nổ:</b> Cấm tuyệt đối đun nấu trong phòng và tàng trữ chất cấm, chất dễ cháy nổ.</p>
+                    <p>5. <b>Nghĩa vụ tài chính:</b> Thanh toán đầy đủ tiền phòng, phí điện nước dịch vụ trước ngày 5 hàng tháng.</p>
+                  </div>
+                  <label className="flex items-start gap-2 mt-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedTerms}
+                      onChange={(e) => setAgreedTerms(e.target.checked)}
+                      className="mt-0.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-700 font-medium leading-tight">
+                      Tôi đã đọc và hoàn toàn đồng ý với Điều khoản & Nội quy trên.
+                    </span>
+                  </label>
+                </div>
+
                 {registerError && (
                   <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-3 py-2">
                     {registerError}
                   </div>
                 )}
-                <button onClick={handleRegisterSubmit}
-                  className="w-full text-white py-3 rounded-xl font-semibold text-sm transition hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F97316 100%)" }}>
-                  Gửi yêu cầu đăng ký
-                </button>
+                {agreedTerms && (
+                  <button onClick={handleRegisterSubmit}
+                    className="w-full text-white py-3 rounded-xl font-semibold text-sm transition hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F97316 100%)" }}>
+                    Gửi yêu cầu đăng ký
+                  </button>
+                )}
               </div>
             )}
           </div>

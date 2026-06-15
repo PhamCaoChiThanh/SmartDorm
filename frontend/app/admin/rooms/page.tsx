@@ -55,7 +55,7 @@ export default function AdminRooms() {
     let mappedStatus = "AVAILABLE";
     if (room.status === "MAINTENANCE") {
       mappedStatus = "MAINTENANCE";
-    } else if (currentCount >= room.capacity || room.status === "OCCUPIED") {
+    } else if (currentCount >= room.capacity) {
       mappedStatus = "FULL";
     }
 

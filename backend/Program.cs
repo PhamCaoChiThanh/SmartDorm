@@ -11,6 +11,7 @@ using Npgsql;
 using SmartDorm.Api.Data;
 using SmartDorm.Api.Models;
 using Amazon.S3;
+using SmartDorm.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,13 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+// HttpContext Accessor for Audit Logging
+builder.Services.AddHttpContextAccessor();
+
+// Register Email Service
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IPdfService, PdfService>();
 
 // Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

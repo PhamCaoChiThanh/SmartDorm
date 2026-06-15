@@ -55,10 +55,10 @@ export default function AdminDashboard() {
   // Calculate statistics
   const totalRooms = rooms.length;
   const occupiedRooms = rooms.filter(
-    (r) => r.status === "OCCUPIED" || r.status === "ĐÃ THUÊ"
+    (r) => (r.currentOccupants || r.current_occupants || 0) > 0
   ).length;
   const availableRooms = rooms.filter(
-    (r) => r.status === "AVAILABLE" || r.status === "TRỐNG"
+    (r) => (r.currentOccupants || r.current_occupants || 0) === 0 && r.status !== "MAINTENANCE"
   ).length;
 
   // Revenue (Total amount of all invoices)

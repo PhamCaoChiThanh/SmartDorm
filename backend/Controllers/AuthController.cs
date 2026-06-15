@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartDorm.Api.Data;
 using SmartDorm.Api.Models;
+using SmartDorm.Api.Services;
 
 namespace SmartDorm.Api.Controllers
 {
@@ -18,11 +19,13 @@ namespace SmartDorm.Api.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _config;
+        private readonly IEmailService _emailService;
 
-        public AuthController(AppDbContext context, IConfiguration config)
+        public AuthController(AppDbContext context, IConfiguration config, IEmailService emailService)
         {
             _context = context;
             _config = config;
+            _emailService = emailService;
         }
 
         public class RegisterDto
@@ -148,6 +151,20 @@ namespace SmartDorm.Api.Controllers
                 }
 
                 await transaction.CommitAsync();
+
+                // Send Welcome Email in background
+                if (!string.IsNullOrEmpty(user.Email))
+                {
+                    var name = dto.FullName ?? user.Username;
+                    _ = Task.Run(() => _emailService.SendEmailAsync(user.Email, "Chào mừng bạn đến với SmartDorm!",
+                        $"<p>Xin chào <b>{name}</b>,</p>" +
+                        $"<p>Chúc mừng bạn đã đăng ký tài khoản thành công trên hệ thống quản lý KTX/Nhà trọ <b>SmartDorm</b> với vai trò <b>{user.Role}</b>.</p>" +
+                        $"<p>Bây giờ bạn đã có thể truy cập vào cổng thông tin, tìm kiếm phòng trống, gửi yêu cầu thuê và quản lý hóa đơn của mình một cách tiện lợi nhất.</p>" +
+                        $"<div class='btn-container'>" +
+                        $"  <a href='http://localhost:3000/login' class='btn' style='color: #ffffff !important;'>Đăng nhập ngay</a>" +
+                        $"</div>" +
+                        $"<p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với ban quản lý thông qua phần hỗ trợ trên trang chủ.</p>"));
+                }
 
                 return StatusCode(201, new
                 {

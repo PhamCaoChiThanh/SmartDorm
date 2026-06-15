@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartDorm.Api.Data;
 using SmartDorm.Api.Models;
+using SmartDorm.Api.Services;
 
 namespace SmartDorm.Api.Controllers
 {
@@ -15,10 +16,14 @@ namespace SmartDorm.Api.Controllers
     public class InvoiceController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly IPdfService _pdfService;
 
-        public InvoiceController(AppDbContext context)
+        public InvoiceController(AppDbContext context, IEmailService emailService, IPdfService pdfService)
         {
             _context = context;
+            _emailService = emailService;
+            _pdfService = pdfService;
         }
 
         [HttpGet]
@@ -192,6 +197,62 @@ namespace SmartDorm.Api.Controllers
             {
                 await transaction.RollbackAsync();
                 return StatusCode(500, new { success = false, message = "Lỗi khi thanh toán", error = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/send")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
+        public async Task<IActionResult> SendInvoice(Guid id)
+        {
+            try
+            {
+                var invoice = await _context.Invoices
+                    .Include(i => i.Contract)
+                        .ThenInclude(c => c!.Tenant)
+                    .Include(i => i.Contract)
+                        .ThenInclude(c => c!.Room)
+                    .FirstOrDefaultAsync(i => i.Id == id);
+
+                if (invoice == null)
+                    return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
+
+                var tenant = invoice.Contract?.Tenant;
+                var room = invoice.Contract?.Room;
+
+                if (tenant == null || string.IsNullOrEmpty(tenant.Email))
+                    return BadRequest(new { success = false, message = "Không có email sinh viên." });
+
+                if (room == null)
+                    return BadRequest(new { success = false, message = "Không tìm thấy thông tin phòng." });
+
+                // Fetch utility usages for this billing period
+                var usages = await _context.UtilityUsages
+                    .Where(u => u.RoomId == room.Id && u.BillingMonth == invoice.BillingMonth && u.BillingYear == invoice.BillingYear)
+                    .ToListAsync();
+
+                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages);
+                var fileName = $"HoaDon_Phong{room.RoomNumber}_T{invoice.BillingMonth}_{invoice.BillingYear}.pdf";
+
+                string subject = $"📄 Hóa đơn tiền phòng tháng {invoice.BillingMonth}/{invoice.BillingYear} - Phòng {room.RoomNumber}";
+                string body = $"<p>Xin chào <b>{tenant.FullName}</b>,</p>" +
+                              $"<p>Ban quản lý KTX SmartDorm gửi đến bạn <b>Hóa đơn tiền phòng</b> tháng <b>{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
+                              $"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-size:14px;'>" +
+                              $"<tr style='background:#1e3a5f;color:white'><th>Khoản mục</th><th>Thành tiền</th></tr>" +
+                              $"<tr><td>Tiền phòng</td><td><b>{invoice.RoomFee:N0} VND</b></td></tr>" +
+                              $"<tr style='background:#f8f9fa'><td>Điện</td><td><b>{invoice.ElectricFee:N0} VND</b></td></tr>" +
+                              $"<tr><td>Nước</td><td><b>{invoice.WaterFee:N0} VND</b></td></tr>" +
+                              $"<tr style='background:#1e3a5f;color:white'><th>TỔNG CỘNG</th><th>{invoice.TotalAmount:N0} VND</th></tr>" +
+                              $"</table>" +
+                              $"<p>⏰ Hạn thanh toán: ngày <b>05/{invoice.BillingMonth}/{invoice.BillingYear}</b>.</p>" +
+                              $"<p>📎 Hóa đơn chi tiết được đính kèm theo email này.</p>";
+
+                await _emailService.SendEmailAsync(tenant.Email, subject, body, pdfBytes, fileName);
+
+                return Ok(new { success = true, message = $"Gửi hóa đơn đến {tenant.Email} thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi gửi hóa đơn", error = ex.Message });
             }
         }
     }
