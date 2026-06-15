@@ -134,6 +134,7 @@ export default function RoomDetailPage() {
   const [scheduleForm, setScheduleForm] = useState({ name: "", phone: "", people: "1", vehicles: "0", visitDate: "", moveDate: "", note: "" });
   const [registerForm, setRegisterForm] = useState({ people: "1", cccd: "", moveDate: "", vehicle: "", note: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [registerError, setRegisterError] = useState("");
 
   useEffect(() => {
     // 1. Tìm trong dữ liệu tĩnh trước
@@ -263,8 +264,6 @@ export default function RoomDetailPage() {
       setScheduleForm({ name: "", phone: "", people: "1", vehicles: "0", visitDate: "", moveDate: "", note: "" });
     }, 1500);
   };
-
-  const [registerError, setRegisterError] = useState("");
 
   const handleRegisterSubmit = async () => {
     if (!registerForm.cccd || !registerForm.moveDate) {

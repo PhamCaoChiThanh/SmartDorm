@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using SmartDorm.Api.Data;
 using SmartDorm.Api.Models;
+using SmartDorm.Api.Services;
 using Amazon.S3;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
 // Configure AWS Lambda Hosting
@@ -58,6 +60,7 @@ else
     s3Client = new AmazonS3Client(region);
 }
 builder.Services.AddSingleton<IAmazonS3>(s3Client);
+builder.Services.AddSingleton<IBedrockService, BedrockService>();
 
 // JWT Authentication Configuration
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "your_super_secret_key_that_is_at_least_32_characters_long_here";

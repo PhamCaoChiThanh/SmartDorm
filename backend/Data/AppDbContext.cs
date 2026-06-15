@@ -21,6 +21,10 @@ namespace SmartDorm.Api.Data
         public DbSet<Maintenance> Maintenances { get; set; } = null!;
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<Deposit> Deposits { get; set; } = null!;
+        public DbSet<Post> Posts { get; set; } = null!;
+        public DbSet<PostLike> PostLikes { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
+        public DbSet<CommentLike> CommentLikes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +62,14 @@ namespace SmartDorm.Api.Data
             modelBuilder.Entity<Maintenance>()
                 .Property(e => e.Status)
                 .HasConversion<string>();
+
+            // Configure composite key for PostLike
+            modelBuilder.Entity<PostLike>()
+                .HasKey(pl => new { pl.PostId, pl.UserId });
+
+            // Configure composite key for CommentLike
+            modelBuilder.Entity<CommentLike>()
+                .HasKey(cl => new { cl.CommentId, cl.UserId });
         }
     }
 }

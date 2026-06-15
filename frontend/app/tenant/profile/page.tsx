@@ -31,7 +31,8 @@ export default function TenantProfilePage() {
     fullName: "",
     phone: "",
     email: "",
-    cccd: ""
+    cccd: "",
+    avatarUrl: ""
   });
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -54,7 +55,8 @@ export default function TenantProfilePage() {
           fullName: res.data.fullName || "",
           phone: res.data.phone || "",
           email: res.data.email || "",
-          cccd: res.data.cccd || ""
+          cccd: res.data.cccd || "",
+          avatarUrl: res.data.avatar_url || ""
         });
       }
     } catch (err: any) {
@@ -101,7 +103,13 @@ export default function TenantProfilePage() {
       setSaving(true);
       const res = await fetchAPI("/tenants/me", {
         method: "PUT",
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          phone: formData.phone,
+          email: formData.email,
+          cccd: formData.cccd,
+          avatarUrl: formData.avatarUrl
+        })
       });
       if (res.success) {
         setMessage({ type: "success", text: "Cập nhật thông tin cá nhân thành công!" });
@@ -110,7 +118,8 @@ export default function TenantProfilePage() {
           fullName: formData.fullName,
           phone: formData.phone,
           email: formData.email,
-          cccd: formData.cccd
+          cccd: formData.cccd,
+          avatar_url: formData.avatarUrl
         }));
         setEditMode(false);
         // Cập nhật lại thông tin lưu ở localStorage
@@ -131,7 +140,8 @@ export default function TenantProfilePage() {
         fullName: profile.fullName || "",
         phone: profile.phone || "",
         email: profile.email || "",
-        cccd: profile.cccd || ""
+        cccd: profile.cccd || "",
+        avatarUrl: profile.avatar_url || ""
       });
     }
     setEditMode(false);
@@ -153,9 +163,13 @@ export default function TenantProfilePage() {
       <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl translate-x-8 -translate-y-8"></div>
         <div className="relative z-10 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0">
-            {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
-          </div>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="Profile avatar" className="w-16 h-16 rounded-2xl object-cover border border-white/30 bg-white/20 shrink-0" />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0">
+              {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-bold">{profile?.fullName || "Sinh viên SmartDorm"}</h1>
             <div className="flex flex-wrap gap-2 mt-1.5 items-center">
@@ -235,6 +249,38 @@ export default function TenantProfilePage() {
                       : "border-gray-100 text-gray-600"
                   }`}
                 />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
+                Ảnh đại diện (Avatar URL)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  disabled={!editMode}
+                  value={formData.avatarUrl}
+                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                  placeholder="URL ảnh đại diện..."
+                  className={`flex-1 bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
+                    editMode
+                      ? "border-blue-300 focus:border-blue-500 bg-white"
+                      : "border-gray-100 text-gray-600"
+                  }`}
+                />
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomSeed = Math.floor(Math.random() * 100000);
+                      setFormData({ ...formData, avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${randomSeed}` });
+                    }}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs px-3 rounded-xl font-semibold transition shrink-0"
+                  >
+                    Ngẫu nhiên
+                  </button>
+                )}
               </div>
             </div>
 

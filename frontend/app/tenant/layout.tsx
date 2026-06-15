@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 const navItems = [
   { label: "Trang chủ", icon: "🏠", path: "/tenant/invoice" },
   { label: "Hợp đồng", icon: "📄", path: "/tenant/contract" },
+  { label: "Bản tin", icon: "💬", path: "/tenant/feed" },
   { label: "Báo hỏng", icon: "🔧", path: "/tenant/maintenance" },
   { label: "Gửi xe", icon: "🚗", path: "/tenant/parking" },
   { label: "Hồ sơ", icon: "👤", path: "/tenant/profile" },
@@ -40,7 +41,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-10">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-6">
           {navItems.map((item) => (
             <button
               key={item.label}

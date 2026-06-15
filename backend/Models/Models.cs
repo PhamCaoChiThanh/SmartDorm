@@ -69,6 +69,10 @@ namespace SmartDorm.Api.Models
         [Required]
         public UserRole Role { get; set; } = UserRole.TENANT;
 
+        [Column("avatar_url")]
+        [MaxLength(255)]
+        public string? AvatarUrl { get; set; }
+
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
@@ -469,5 +473,109 @@ namespace SmartDorm.Api.Models
 
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("posts")]
+    public class Post
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("user_id")]
+        [Required]
+        public Guid UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public User? User { get; set; }
+
+        [Column("content")]
+        [Required]
+        public string Content { get; set; } = string.Empty;
+
+        [Column("image_url")]
+        public string? ImageUrl { get; set; }
+
+        [Column("likes_count")]
+        public int LikesCount { get; set; } = 0;
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("post_likes")]
+    public class PostLike
+    {
+        [Column("post_id")]
+        public Guid PostId { get; set; }
+
+        [ForeignKey(nameof(PostId))]
+        public Post? Post { get; set; }
+
+        [Column("user_id")]
+        public Guid UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public User? User { get; set; }
+    }
+
+    [Table("comments")]
+    public class Comment
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("post_id")]
+        [Required]
+        public Guid PostId { get; set; }
+
+        [ForeignKey(nameof(PostId))]
+        public Post? Post { get; set; }
+
+        [Column("user_id")]
+        [Required]
+        public Guid UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public User? User { get; set; }
+
+        [Column("content")]
+        [Required]
+        public string Content { get; set; } = string.Empty;
+
+        [Column("parent_id")]
+        public Guid? ParentId { get; set; }
+
+        [ForeignKey(nameof(ParentId))]
+        public Comment? Parent { get; set; }
+
+        [Column("likes_count")]
+        public int LikesCount { get; set; } = 0;
+
+        [Column("image_url")]
+        public string? ImageUrl { get; set; }
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("comment_likes")]
+    public class CommentLike
+    {
+        [Column("comment_id")]
+        public Guid CommentId { get; set; }
+
+        [ForeignKey(nameof(CommentId))]
+        public Comment? Comment { get; set; }
+
+        [Column("user_id")]
+        public Guid UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public User? User { get; set; }
     }
 }
