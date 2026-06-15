@@ -100,6 +100,32 @@ app.MapGet("/", () => Results.Text("SmartDorm C# Web API is running successfully
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok("OK"));
 
-// Seed database
+// Seed database & Ensure tables are created
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        context.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS notifications (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                type VARCHAR(50) NOT NULL,
+                post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+                comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+            CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error creating notifications table: {ex.Message}");
+    }
+}
 
 app.Run();

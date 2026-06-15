@@ -365,7 +365,7 @@ CREATE INDEX idx_parking_payment_invoice
 ON parking_payments(parking_invoice_id);
 
 --------------------------------------------------
--- POSTS (THREADS NEWS FEED)
+-- POSTS (NEWS FEED)
 --------------------------------------------------
 
 CREATE TABLE posts (
@@ -404,4 +404,24 @@ CREATE TABLE comment_likes (
 CREATE INDEX idx_posts_user ON posts(user_id);
 CREATE INDEX idx_comments_post ON comments(post_id);
 CREATE INDEX idx_comments_user ON comments(user_id);
-CREATE INDEX idx_comments_parent ON comments(parent_id);
+CREATE INDEX idx_comments_parent ON comments(parent_id);
+
+--------------------------------------------------
+-- NOTIFICATIONS
+--------------------------------------------------
+
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL, -- 'LIKE_POST', 'COMMENT_POST', 'REPLY_COMMENT'
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX idx_notifications_created ON notifications(created_at);
+

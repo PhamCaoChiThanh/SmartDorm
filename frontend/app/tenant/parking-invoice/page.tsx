@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Copy,
   CreditCard,
+  ChevronLeft,
 } from "lucide-react";
 
 const parkingInvoices = [
@@ -119,8 +120,8 @@ export default function TenantParkingInvoice() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm px-4 py-4 flex justify-between items-center">
-        <button onClick={() => router.back()} className="text-blue-600 text-sm">
-          ← Quay lại
+        <button onClick={() => router.back()} className="text-blue-600 text-sm flex items-center gap-1">
+          <ChevronLeft size={16} /> Quay lại
         </button>
         <h1 className="font-bold text-blue-600 flex items-center gap-1">
           <ParkingSquare size={18} /> Hóa đơn gửi xe
@@ -179,8 +180,8 @@ export default function TenantParkingInvoice() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 {step === "confirm" && (
-                  <button onClick={() => setStep("select")} className="text-gray-400 hover:text-gray-600 text-sm">
-                    ← Quay lại
+                  <button onClick={() => setStep("select")} className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1">
+                    <ChevronLeft size={16} /> Quay lại
                   </button>
                 )}
                 <h3 className="font-semibold text-base">

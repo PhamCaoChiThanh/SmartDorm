@@ -111,7 +111,7 @@ export default function TenantFeed() {
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
   // Current user – initialized lazily from localStorage (no useEffect needed)
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
+  const [currentUser] = useState<CurrentUser | null>(() => {
     if (typeof window === "undefined") return null;
     try {
       const saved = localStorage.getItem("user");
@@ -519,15 +519,15 @@ export default function TenantFeed() {
   const rootComments = comments.filter((c) => !c.parent_id && !c.parentId);
 
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-4 pb-24 text-gray-800">
+    <div className="p-4 max-w-lg mx-auto space-y-4 pb-24 text-gray-800 dark:text-zinc-200">
       
       {/* Title */}
-      <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+      <div className="flex justify-between items-center bg-white dark:bg-zinc-900 rounded-2xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800">
         <div>
-          <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-zinc-50 flex items-center gap-2">
             💬 Bản tin KTX
           </h1>
-          <p className="text-xs text-gray-400">Kết nối & chia sẻ cùng các bạn sinh viên</p>
+          <p className="text-xs text-gray-400 dark:text-zinc-500">Kết nối & chia sẻ cùng các bạn sinh viên</p>
         </div>
       </div>
 
@@ -539,11 +539,11 @@ export default function TenantFeed() {
       )}
 
       {/* Soạn bài viết */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 space-y-3">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 space-y-3">
         <div className="flex gap-3">
           {/* Avatar đại diện */}
           {myAvatar ? (
-            <Image src={myAvatar} alt="Avatar" width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" unoptimized />
+            <Image src={myAvatar} alt="Avatar" width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-800 shrink-0" unoptimized />
           ) : (
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
               {myInitials}
@@ -555,7 +555,7 @@ export default function TenantFeed() {
             placeholder="Bạn đang nghĩ gì? Chia sẻ ngay..."
             maxLength={280}
             rows={3}
-            className="flex-1 w-full text-sm outline-none resize-none placeholder-gray-400 py-1 bg-white"
+            className="flex-1 w-full text-sm outline-none resize-none placeholder-gray-400 dark:placeholder-zinc-500 py-1 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100"
           />
         </div>
 
@@ -628,13 +628,13 @@ export default function TenantFeed() {
             );
 
             return (
-              <div key={post.id} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
+              <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 flex gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
               
               {/* Author Avatar */}
               {post.author_avatar ? (
-              <Image src={post.author_avatar} alt={post.author_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" unoptimized />
+              <Image src={post.author_avatar} alt={post.author_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-zinc-800 shrink-0" unoptimized />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm shrink-0">
                   {post.author_name ? post.author_name.substring(0, 2).toUpperCase() : "SV"}
                 </div>
               )}
@@ -642,9 +642,9 @@ export default function TenantFeed() {
               {/* Thread Content */}
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm text-gray-900 truncate">{post.author_name}</span>
+                  <span className="font-semibold text-sm text-gray-900 dark:text-zinc-50 truncate">{post.author_name}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400">{formatRelativeTime(post.created_at)}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-zinc-500">{formatRelativeTime(post.created_at)}</span>
                     {isPostDeletable && (
                       <button
                         onClick={() => handleDeletePost(post.id)}
@@ -657,19 +657,19 @@ export default function TenantFeed() {
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
+                <p className="text-sm text-gray-700 dark:text-zinc-300 leading-relaxed break-words whitespace-pre-wrap">
                   {renderContentWithMentions(post.content)}
                 </p>
 
                 {/* Render Post Image if exists */}
                 {post.image_url && (
-                  <div className="relative w-full h-72 rounded-2xl overflow-hidden border border-gray-100 shadow-xs mt-2">
+                  <div className="relative w-full h-72 rounded-2xl overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-xs mt-2">
                     <Image src={post.image_url} alt="Post Attachment" fill className="object-cover" unoptimized />
                   </div>
                 )}
 
                 {/* Interactions Row */}
-                <div className="flex items-center gap-4 pt-2 border-t border-gray-50 mt-1.5">
+                <div className="flex items-center gap-4 pt-2 border-t border-gray-50 dark:border-zinc-800 mt-1.5">
                   
                   {/* Like Button */}
                   <button
@@ -698,8 +698,8 @@ export default function TenantFeed() {
             );
           })
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm p-12 border border-gray-100 text-center text-gray-400">
-            <MessageCircle className="mx-auto mb-2 text-gray-200" size={48} />
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm p-12 border border-gray-100 dark:border-zinc-800 text-center text-gray-400 dark:text-zinc-500">
+            <MessageCircle className="mx-auto mb-2 text-gray-200 dark:text-zinc-700" size={48} />
             <p className="text-sm">Bản tin trống. Hãy là người đầu tiên chia sẻ!</p>
           </div>
         )}
@@ -708,17 +708,17 @@ export default function TenantFeed() {
       {/* Comments Modal */}
       {showCommentsModal && selectedPost && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl text-gray-800 relative max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl text-gray-800 dark:text-zinc-100 border border-gray-100 dark:border-zinc-800 relative max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
             
             {/* Header */}
-            <div className="flex justify-between items-center border-b pb-3 shrink-0">
+            <div className="flex justify-between items-center border-b dark:border-zinc-800 pb-3 shrink-0">
               <div>
-                <h3 className="font-bold text-sm text-gray-900">Bình luận bài viết</h3>
+                <h3 className="font-bold text-sm text-gray-900 dark:text-zinc-50">Bình luận bài viết</h3>
                 <p className="text-[10px] text-gray-400">Đăng bởi {selectedPost.author_name}</p>
               </div>
               <button
                 onClick={() => setShowCommentsModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
               >
                 <X size={18} />
               </button>
@@ -750,23 +750,23 @@ export default function TenantFeed() {
                         {/* Left column: Avatar and thread line */}
                         <div className="flex flex-col items-center shrink-0 w-8">
                           {c.author_avatar ? (
-                            <Image src={c.author_avatar} alt={c.author_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover border border-gray-100" unoptimized />
+                            <Image src={c.author_avatar} alt={c.author_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-zinc-800" unoptimized />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-blue-600 text-[10px]">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-[10px]">
                               {c.author_name ? c.author_name.substring(0, 2).toUpperCase() : "SV"}
                             </div>
                           )}
                           {childReplies.length > 0 && isExpanded && (
-                            <div className="w-0.5 bg-gray-200 flex-1 my-1"></div>
+                            <div className="w-0.5 bg-gray-200 dark:bg-zinc-800 flex-1 my-1"></div>
                           )}
                         </div>
 
                         {/* Right column: Content */}
                         <div className="flex-1 min-w-0 pb-3">
                           <div className="flex justify-between items-center mb-0.5">
-                            <span className="font-semibold text-gray-900">{c.author_name}</span>
+                            <span className="font-semibold text-gray-900 dark:text-zinc-50">{c.author_name}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[9px] text-gray-400">{formatRelativeTime(c.created_at)}</span>
+                              <span className="text-[9px] text-gray-400 dark:text-zinc-500">{formatRelativeTime(c.created_at)}</span>
                               {isCommentDeletable && (
                                 <button
                                   onClick={() => handleDeleteComment(c.id)}
@@ -778,11 +778,11 @@ export default function TenantFeed() {
                               )}
                             </div>
                           </div>
-                          <p className="text-gray-700 break-words leading-relaxed">
+                          <p className="text-gray-700 dark:text-zinc-300 break-words leading-relaxed">
                             {renderContentWithMentions(c.content)}
                           </p>
                           {c.image_url && (
-                            <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-100 shadow-xs mt-1.5">
+                            <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-xs mt-1.5">
                               <Image src={c.image_url} alt="Comment Attachment" fill className="object-cover" unoptimized />
                             </div>
                           )}
@@ -811,7 +811,7 @@ export default function TenantFeed() {
                             <button
                               type="button"
                               onClick={() => toggleExpandComment(c.id)}
-                              className="text-[10px] text-blue-600 hover:text-blue-700 font-semibold mt-1.5 transition-colors block hover:underline"
+                              className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold mt-1.5 transition-colors block hover:underline"
                             >
                               {isExpanded ? "Thu gọn phản hồi" : `Xem ${childReplies.length} câu trả lời`}
                             </button>
@@ -837,25 +837,25 @@ export default function TenantFeed() {
                               <div key={child.id} className="flex gap-3 items-stretch text-xs">
                                 {/* Left column: Connector line and child avatar */}
                                 <div className="flex flex-col items-center shrink-0 w-8">
-                                  <div className="w-0.5 bg-gray-200 h-2"></div>
+                                  <div className="w-0.5 bg-gray-200 dark:bg-zinc-800 h-2"></div>
                                   {child.author_avatar ? (
-                                    <Image src={child.author_avatar} alt={child.author_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover border border-gray-100" unoptimized />
+                                    <Image src={child.author_avatar} alt={child.author_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-zinc-800" unoptimized />
                                   ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-gray-500 text-[10px]">
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center font-bold text-gray-500 dark:text-zinc-500 text-[10px]">
                                       {child.author_name ? child.author_name.substring(0, 2).toUpperCase() : "SV"}
                                     </div>
                                   )}
                                   {!isLastChild && (
-                                    <div className="w-0.5 bg-gray-200 flex-1 my-1"></div>
+                                    <div className="w-0.5 bg-gray-200 dark:bg-zinc-800 flex-1 my-1"></div>
                                   )}
                                 </div>
 
                                 {/* Right column: Child content */}
                                 <div className="flex-1 min-w-0 pb-3">
                                   <div className="flex justify-between items-center mb-0.5">
-                                    <span className="font-semibold text-gray-900">{child.author_name}</span>
+                                    <span className="font-semibold text-gray-900 dark:text-zinc-50">{child.author_name}</span>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-[9px] text-gray-400">{formatRelativeTime(child.created_at)}</span>
+                                      <span className="text-[9px] text-gray-400 dark:text-zinc-500">{formatRelativeTime(child.created_at)}</span>
                                       {isChildDeletable && (
                                         <button
                                           onClick={() => handleDeleteComment(child.id)}
@@ -867,11 +867,11 @@ export default function TenantFeed() {
                                       )}
                                     </div>
                                   </div>
-                                  <p className="text-gray-700 break-words leading-relaxed">
+                                  <p className="text-gray-700 dark:text-zinc-300 break-words leading-relaxed">
                                     {renderContentWithMentions(child.content)}
                                   </p>
                                   {child.image_url && (
-                                    <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-100 shadow-xs mt-1.5">
+                                    <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-xs mt-1.5">
                                       <Image src={child.image_url} alt="Reply Attachment" fill className="object-cover" unoptimized />
                                     </div>
                                   )}
@@ -912,7 +912,7 @@ export default function TenantFeed() {
 
             {/* Replying banner indicator */}
             {replyingTo && (
-              <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-t-xl text-[10px] flex justify-between items-center border-b border-blue-100 shrink-0">
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-t-xl text-[10px] flex justify-between items-center border-b border-blue-100 dark:border-blue-900 shrink-0">
                 <span>Đang trả lời <strong>@{replyingTo.author_name}</strong></span>
                 <button
                   onClick={() => {
@@ -922,7 +922,7 @@ export default function TenantFeed() {
                       setCommentContent(commentContent.substring(mention.length));
                     }
                   }}
-                  className="text-blue-500 hover:text-blue-700 p-0.5 rounded-full hover:bg-blue-100 transition"
+                  className="text-blue-500 hover:text-blue-700 p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition"
                 >
                   <X size={12} />
                 </button>
@@ -931,7 +931,7 @@ export default function TenantFeed() {
 
             {/* Preview ảnh bình luận */}
             {commentImage && (
-              <div className="relative w-full h-32 rounded-xl overflow-hidden border border-gray-100 mt-1 shrink-0">
+              <div className="relative w-full h-32 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-800 mt-1 shrink-0">
                 <Image src={commentImage} alt="Comment Preview" fill className="object-cover" unoptimized />
                 <button
                   type="button"
@@ -953,13 +953,13 @@ export default function TenantFeed() {
             />
 
             {/* Send Comment Input */}
-            <div className={`border-t flex gap-2 shrink-0 items-center ${replyingTo ? "pt-2" : "pt-3"}`}>
+            <div className={`border-t dark:border-zinc-800 flex gap-2 shrink-0 items-center ${replyingTo ? "pt-2" : "pt-3"}`}>
               <button
                 type="button"
                 onClick={() => commentFileInputRef.current?.click()}
                 disabled={commentImageLoading}
                 className={`p-1.5 rounded-lg transition-colors shrink-0 ${
-                  commentImage ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-blue-600 hover:bg-gray-50"
+                  commentImage ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-zinc-800"
                 } disabled:opacity-50`}
                 title="Đính kèm ảnh từ máy tính"
               >
@@ -970,7 +970,7 @@ export default function TenantFeed() {
                 value={commentContent}
                 onChange={(e) => setCommentContent(e.target.value)}
                 placeholder="Viết bình luận..."
-                className="flex-1 border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="flex-1 border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                 onKeyDown={(e) => e.key === "Enter" && handleSendComment()}
               />
               <button

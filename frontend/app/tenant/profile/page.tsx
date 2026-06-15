@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import {
@@ -21,6 +21,30 @@ import {
   DollarSign
 } from "lucide-react";
 
+// Resize & compress image to base64 for avatar (max 250px width, quality 0.85)
+function resizeAndConvertToBase64(file: File, maxWidth = 250, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function TenantProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
@@ -35,6 +59,64 @@ export default function TenantProfilePage() {
     avatarUrl: ""
   });
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [viewAvatarOpen, setViewAvatarOpen] = useState(false);
+
+  const updateAvatarDirectly = async (base64: string) => {
+    try {
+      setAvatarLoading(true);
+      setMessage(null);
+      const payload = {
+        fullName: profile?.fullName || formData.fullName,
+        phone: profile?.phone || formData.phone,
+        email: profile?.email || formData.email,
+        cccd: profile?.cccd || formData.cccd,
+        avatarUrl: base64
+      };
+      const res = await fetchAPI("/tenants/me", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      if (res.success) {
+        setMessage({ type: "success", text: "Cập nhật ảnh đại diện thành công!" });
+        setProfile((prev: any) => ({ ...prev, avatar_url: base64 }));
+        setFormData((prev) => ({ ...prev, avatarUrl: base64 }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: "error", text: err.message || "Không thể cập nhật ảnh đại diện." });
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Vui lòng chọn file hình ảnh hợp lệ." });
+      return;
+    }
+    try {
+      setAvatarLoading(true);
+      setMessage(null);
+      const base64 = await resizeAndConvertToBase64(file, 250, 0.85);
+      if (editMode) {
+        setFormData((prev) => ({ ...prev, avatarUrl: base64 }));
+      } else {
+        await updateAvatarDirectly(base64);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: "error", text: "Lỗi đọc file ảnh. Vui lòng thử lại." });
+    } finally {
+      setAvatarLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -164,9 +246,17 @@ export default function TenantProfilePage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl translate-x-8 -translate-y-8"></div>
         <div className="relative z-10 flex items-center gap-4">
           {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="Profile avatar" className="w-16 h-16 rounded-2xl object-cover border border-white/30 bg-white/20 shrink-0" />
+            <img
+              src={profile.avatar_url}
+              alt="Profile avatar"
+              onClick={() => setAvatarMenuOpen(true)}
+              className="w-16 h-16 rounded-2xl object-cover border border-white/30 bg-white/20 shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 hover:ring-2 hover:ring-white/50"
+            />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0">
+            <div
+              onClick={() => setAvatarMenuOpen(true)}
+              className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 hover:ring-2 hover:ring-white/50"
+            >
               {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
             </div>
           )}
@@ -206,16 +296,16 @@ export default function TenantProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Cột 1: Thông tin cá nhân */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-6">
-          <div className="flex justify-between items-center pb-2 border-b">
-            <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-              <User size={18} className="text-blue-600" />
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 p-6 space-y-6">
+          <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800">
+            <h2 className="font-bold text-gray-800 dark:text-zinc-100 text-lg flex items-center gap-2">
+              <User size={18} className="text-blue-600 dark:text-blue-400" />
               Thông tin cá nhân
             </h2>
             {!editMode ? (
               <button
                 onClick={() => setEditMode(true)}
-                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
               >
                 <Edit2 size={14} />
                 Chỉnh sửa
@@ -223,7 +313,7 @@ export default function TenantProfilePage() {
             ) : (
               <button
                 onClick={handleCancel}
-                className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700"
+                className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
               >
                 <X size={14} />
                 Hủy bỏ
@@ -233,91 +323,70 @@ export default function TenantProfilePage() {
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
+              <label className="text-xs text-gray-400 dark:text-zinc-500 font-semibold uppercase tracking-wider block">
                 Họ và Tên
               </label>
               <div className="relative">
+                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-550" />
                 <input
                   type="text"
                   required
                   disabled={!editMode}
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className={`w-full bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
+                  className={`w-full bg-gray-50 dark:bg-zinc-800 border rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none transition-colors ${
                     editMode
-                      ? "border-blue-300 focus:border-blue-500 bg-white"
-                      : "border-gray-100 text-gray-600"
+                      ? "border-blue-300 dark:border-blue-700 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                      : "border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-zinc-400"
                   }`}
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
-                Ảnh đại diện (Avatar URL)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  disabled={!editMode}
-                  value={formData.avatarUrl}
-                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                  placeholder="URL ảnh đại diện..."
-                  className={`flex-1 bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
-                    editMode
-                      ? "border-blue-300 focus:border-blue-500 bg-white"
-                      : "border-gray-100 text-gray-600"
-                  }`}
-                />
-                {editMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const randomSeed = Math.floor(Math.random() * 100000);
-                      setFormData({ ...formData, avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${randomSeed}` });
-                    }}
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs px-3 rounded-xl font-semibold transition shrink-0"
-                  >
-                    Ngẫu nhiên
-                  </button>
-                )}
-              </div>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarFileChange}
+            />
 
             <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
+              <label className="text-xs text-gray-400 dark:text-zinc-500 font-semibold uppercase tracking-wider block">
                 Số CCCD / Hộ chiếu
               </label>
               <div className="relative">
+                <CreditCard size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-550" />
                 <input
                   type="text"
                   required
                   disabled={!editMode}
                   value={formData.cccd}
                   onChange={(e) => setFormData({ ...formData, cccd: e.target.value })}
-                  className={`w-full bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
+                  className={`w-full bg-gray-50 dark:bg-zinc-800 border rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none transition-colors ${
                     editMode
-                      ? "border-blue-300 focus:border-blue-500 bg-white"
-                      : "border-gray-100 text-gray-600"
+                      ? "border-blue-300 dark:border-blue-700 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                      : "border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-zinc-400"
                   }`}
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
+              <label className="text-xs text-gray-400 dark:text-zinc-500 font-semibold uppercase tracking-wider block">
                 Số điện thoại
               </label>
               <div className="relative">
+                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-550" />
                 <input
                   type="tel"
                   disabled={!editMode}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
+                  className={`w-full bg-gray-50 dark:bg-zinc-800 border rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none transition-colors ${
                     editMode
-                      ? "border-blue-300 focus:border-blue-500 bg-white"
-                      : "border-gray-100 text-gray-600"
+                      ? "border-blue-300 dark:border-blue-700 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                      : "border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-zinc-400"
                   }`}
                   placeholder="Chưa cập nhật SĐT"
                 />
@@ -325,19 +394,20 @@ export default function TenantProfilePage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">
+              <label className="text-xs text-gray-400 dark:text-zinc-500 font-semibold uppercase tracking-wider block">
                 Địa chỉ Email
               </label>
               <div className="relative">
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-550" />
                 <input
                   type="email"
                   disabled={!editMode}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full bg-gray-50 border rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors ${
+                  className={`w-full bg-gray-50 dark:bg-zinc-800 border rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none transition-colors ${
                     editMode
-                      ? "border-blue-300 focus:border-blue-500 bg-white"
-                      : "border-gray-100 text-gray-600"
+                      ? "border-blue-300 dark:border-blue-700 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                      : "border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-zinc-400"
                   }`}
                   placeholder="Chưa cập nhật email"
                 />
@@ -364,58 +434,58 @@ export default function TenantProfilePage() {
         {/* Cột 2: Thông tin phòng ở & hợp đồng */}
         <div className="space-y-6">
           {/* Thông tin phòng */}
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-            <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2 pb-2 border-b">
-              <Home size={18} className="text-blue-600" />
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 p-6 space-y-4">
+            <h2 className="font-bold text-gray-800 dark:text-zinc-100 text-lg flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800">
+              <Home size={18} className="text-blue-600 dark:text-blue-400" />
               Thông tin phòng ở
             </h2>
 
             {profile?.room ? (
               <div className="space-y-3.5">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Số phòng</span>
-                  <span className="font-bold text-gray-800 text-base">{profile.room.roomNumber}</span>
+                  <span className="text-gray-500 dark:text-zinc-400">Số phòng</span>
+                  <span className="font-bold text-gray-800 dark:text-zinc-100 text-base">{profile.room.roomNumber}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Trạng thái</span>
-                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                  <span className="text-gray-500 dark:text-zinc-400">Trạng thái</span>
+                  <span className="text-xs bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold">
                     {profile.room.status === "AVAILABLE" ? "Còn trống" : "Đang thuê"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Giá phòng cơ bản</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-gray-500 dark:text-zinc-400">Giá phòng cơ bản</span>
+                  <span className="font-bold text-gray-900 dark:text-zinc-550">
                     {profile.room.basePrice.toLocaleString("vi-VN")} đ/tháng
                   </span>
                 </div>
 
-                <div className="bg-gray-50 rounded-2xl p-4 space-y-2 text-xs">
-                  <p className="font-bold text-gray-400 uppercase tracking-wider mb-1">
+                <div className="bg-gray-50 dark:bg-zinc-800 rounded-2xl p-4 space-y-2 text-xs">
+                  <p className="font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
                     Đơn giá tiện ích phòng
                   </p>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-600 dark:text-zinc-400">
                     <span>Đơn giá điện:</span>
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-gray-800 dark:text-zinc-200">
                       {profile.room.electricityPrice.toLocaleString("vi-VN")} đ/số
                     </span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-600 dark:text-zinc-400">
                     <span>Đơn giá nước:</span>
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-gray-800 dark:text-zinc-200">
                       {profile.room.waterPrice.toLocaleString("vi-VN")} đ/khối
                     </span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-600 dark:text-zinc-400">
                     <span>Phí rác:</span>
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-gray-800 dark:text-zinc-200">
                       {profile.room.garbageFee.toLocaleString("vi-VN")} đ/tháng
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-400 space-y-2">
-                <AlertCircle size={32} className="mx-auto text-gray-300" />
+              <div className="text-center py-6 text-gray-400 dark:text-zinc-500 space-y-2">
+                <AlertCircle size={32} className="mx-auto text-gray-300 dark:text-zinc-650" />
                 <p className="text-sm">Bạn hiện chưa được sắp xếp phòng nào.</p>
               </div>
             )}
@@ -423,27 +493,27 @@ export default function TenantProfilePage() {
 
           {/* Thông tin Hợp đồng */}
           {profile?.contract && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-              <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2 pb-2 border-b">
-                <Calendar size={18} className="text-blue-600" />
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 p-6 space-y-4">
+              <h2 className="font-bold text-gray-800 dark:text-zinc-100 text-lg flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800">
+                <Calendar size={18} className="text-blue-600 dark:text-blue-400" />
                 Thời hạn hợp đồng
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Ngày bắt đầu</span>
-                  <span className="font-semibold text-gray-700">{profile.contract.startDate}</span>
+                  <span className="text-gray-500 dark:text-zinc-400">Ngày bắt đầu</span>
+                  <span className="font-semibold text-gray-700 dark:text-zinc-300">{profile.contract.startDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Ngày kết thúc</span>
-                  <span className="font-semibold text-gray-700">{profile.contract.endDate}</span>
+                  <span className="text-gray-500 dark:text-zinc-400">Ngày kết thúc</span>
+                  <span className="font-semibold text-gray-700 dark:text-zinc-300">{profile.contract.endDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Trạng thái hợp đồng</span>
+                  <span className="text-gray-500 dark:text-zinc-400">Trạng thái hợp đồng</span>
                   <span
                     className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
                       profile.contract.status === "ACTIVE"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
+                        ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                        : "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-355"
                     }`}
                   >
                     {profile.contract.status === "ACTIVE" ? "Đang hiệu lực" : profile.contract.status}
@@ -456,16 +526,16 @@ export default function TenantProfilePage() {
       </div>
 
       {/* Lịch sử hóa đơn của bạn */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2 pb-2 border-b">
-          <FileText size={18} className="text-blue-600" />
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 p-6 space-y-4">
+        <h2 className="font-bold text-gray-800 dark:text-zinc-100 text-lg flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-zinc-800">
+          <FileText size={18} className="text-blue-600 dark:text-blue-400" />
           Hóa đơn của bạn
         </h2>
 
         {profile?.invoices && profile.invoices.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-600">
-              <thead className="text-xs text-gray-400 uppercase bg-gray-50/50 rounded-xl">
+            <table className="w-full text-sm text-left text-gray-600 dark:text-zinc-300">
+              <thead className="text-xs text-gray-400 dark:text-zinc-500 uppercase bg-gray-50/50 dark:bg-zinc-800/30 rounded-xl">
                 <tr>
                   <th scope="col" className="px-4 py-3">
                     Kỳ hóa đơn
@@ -484,26 +554,26 @@ export default function TenantProfilePage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
                 {profile.invoices.map((inv: any) => (
-                  <tr key={inv.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-4 font-semibold text-gray-900">
+                  <tr key={inv.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-4 py-4 font-semibold text-gray-900 dark:text-zinc-105">
                       Tháng {inv.billingMonth}/{inv.billingYear}
                     </td>
-                    <td className="px-4 py-4 font-bold text-blue-600">
+                    <td className="px-4 py-4 font-bold text-blue-600 dark:text-blue-400">
                       {inv.totalAmount ? inv.totalAmount.toLocaleString("vi-VN") : "0"} đ
                     </td>
-                    <td className="px-4 py-4 text-gray-500">
+                    <td className="px-4 py-4 text-gray-500 dark:text-zinc-400">
                       {inv.paidAmount ? inv.paidAmount.toLocaleString("vi-VN") : "0"} đ
                     </td>
                     <td className="px-4 py-4">
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                           inv.status === "PAID"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
                             : inv.status === "OVERDUE"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+                            : "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400"
                         }`}
                       >
                         {inv.status === "PAID"
@@ -516,7 +586,7 @@ export default function TenantProfilePage() {
                     <td className="px-4 py-4 text-right">
                       <a
                         href="/tenant/invoice"
-                        className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-semibold transition"
+                        className="text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/60 px-3 py-1.5 rounded-lg font-semibold transition"
                       >
                         Chi tiết
                       </a>
@@ -527,12 +597,71 @@ export default function TenantProfilePage() {
             </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400 space-y-2">
-            <AlertCircle size={32} className="mx-auto text-gray-300" />
+          <div className="text-center py-8 text-gray-400 dark:text-zinc-500 space-y-2">
+            <AlertCircle size={32} className="mx-auto text-gray-300 dark:text-zinc-650" />
             <p className="text-sm">Không có dữ liệu hóa đơn nào.</p>
           </div>
         )}
       </div>
+
+      {/* Modal Lựa chọn Ảnh đại diện */}
+      {avatarMenuOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs" onClick={() => setAvatarMenuOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-6 w-80 max-w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 dark:text-zinc-100 text-lg text-center mb-4">Ảnh đại diện</h3>
+            <div className="space-y-2">
+              {profile?.avatar_url && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewAvatarOpen(true);
+                    setAvatarMenuOpen(false);
+                  }}
+                  className="w-full text-left font-semibold text-sm px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-xl text-gray-700 dark:text-zinc-300 transition-colors"
+                >
+                  Xem ảnh đại diện
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setAvatarMenuOpen(false);
+                }}
+                className="w-full text-left font-semibold text-sm px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-xl text-gray-700 dark:text-zinc-300 transition-colors"
+              >
+                Thay ảnh đại diện
+              </button>
+              <button
+                type="button"
+                onClick={() => setAvatarMenuOpen(false)}
+                className="w-full text-center font-bold text-sm px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors mt-2"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xem Ảnh đại diện fullsize */}
+      {viewAvatarOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md" onClick={() => setViewAvatarOpen(false)}>
+          <div className="relative max-w-[95vw] max-h-[85vh] animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setViewAvatarOpen(false)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={profile?.avatar_url}
+              alt="Avatar Fullsize"
+              className="max-w-full max-h-[80vh] rounded-3xl object-contain shadow-2xl border border-white/10"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

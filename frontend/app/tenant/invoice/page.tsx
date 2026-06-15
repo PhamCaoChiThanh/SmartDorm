@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -130,7 +131,7 @@ export default function TenantInvoice() {
   }
 
   useEffect(() => {
-    loadInvoiceData();
+    Promise.resolve().then(() => loadInvoiceData());
   }, []);
 
   const handleCopy = (text: string, key: string) => {
@@ -190,9 +191,9 @@ export default function TenantInvoice() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
-        <p className="text-gray-500 text-sm">Đang tải hóa đơn của bạn...</p>
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4 text-gray-500 dark:text-zinc-400">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 dark:border-zinc-800 border-t-blue-600 dark:border-t-blue-400"></div>
+        <p className="text-gray-500 dark:text-zinc-400 text-sm">Đang tải hóa đơn của bạn...</p>
       </div>
     );
   }
@@ -200,30 +201,30 @@ export default function TenantInvoice() {
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4 pb-24">
       {/* Thông báo */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
-          <Bell size={16} className="text-yellow-500" />
+      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800">
+        <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-zinc-100">
+          <Bell size={16} className="text-yellow-500 dark:text-yellow-400" />
           Thông báo
         </h2>
         {notifications.length > 0 ? (
           notifications.map((n) => (
             <div
               key={n.id}
-              className={`py-2 border-b last:border-0 flex justify-between items-start ${
-                !n.read ? "font-medium" : "text-gray-400"
+              className={`py-2 border-b dark:border-zinc-800 last:border-0 flex justify-between items-start ${
+                !n.read ? "font-medium text-gray-800 dark:text-zinc-200" : "text-gray-400 dark:text-zinc-550"
               }`}
             >
               <span className="text-sm">{n.message}</span>
-              <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{n.time}</span>
+              <span className="text-xs text-gray-400 dark:text-zinc-550 ml-2 whitespace-nowrap">{n.time}</span>
             </div>
           ))
         ) : (
-          <p className="text-sm text-gray-400 py-2">Không có thông báo nào mới.</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500 py-2">Không có thông báo nào mới.</p>
         )}
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm p-4 rounded-xl flex items-center gap-2 border border-red-100">
+        <div className="bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-sm p-4 rounded-xl flex items-center gap-2 border border-red-100 dark:border-red-900/30">
           <AlertCircle size={16} />
           <span>{error}</span>
         </div>
@@ -231,68 +232,68 @@ export default function TenantInvoice() {
 
       {/* Hóa đơn */}
       {invoice ? (
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800">
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-semibold flex items-center gap-2 text-gray-800">
-              <FileText size={16} className="text-gray-500" />
+            <h2 className="font-semibold flex items-center gap-2 text-gray-800 dark:text-zinc-100">
+              <FileText size={16} className="text-gray-500 dark:text-zinc-400" />
               Tháng {invoice.billingMonth}/{invoice.billingYear}
             </h2>
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-              isPaid ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+              isPaid ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400" : "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400"
             }`}>
               {isPaid ? "ĐÃ THANH TOÁN" : "PENDING"}
             </span>
           </div>
 
-          <p className="text-sm text-gray-500 mb-3">Phòng: {roomNumber} · Hạn: {invoice.dueDate || `${invoice.billingYear}-${String(invoice.billingMonth).padStart(2, '0')}-20`}</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mb-3">Phòng: {roomNumber} · Hạn: {invoice.dueDate || `${invoice.billingYear}-${String(invoice.billingMonth).padStart(2, '0')}-20`}</p>
 
           <div className="space-y-2 mb-4">
             {invoiceItems.map((item) => (
-              <div key={item.label} className="flex justify-between text-sm text-gray-600">
+              <div key={item.label} className="flex justify-between text-sm text-gray-600 dark:text-zinc-400">
                 <span>{item.label}</span>
-                <span className="font-medium text-gray-800">{item.amount.toLocaleString("vi-VN")}đ</span>
+                <span className="font-medium text-gray-800 dark:text-zinc-200">{item.amount.toLocaleString("vi-VN")}đ</span>
               </div>
             ))}
-            <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-gray-800">
+            <div className="flex justify-between font-bold text-base border-t dark:border-zinc-800 pt-2 mt-2 text-gray-800 dark:text-zinc-100">
               <span>Tổng cộng</span>
-              <span className="text-blue-600">{total.toLocaleString("vi-VN")}đ</span>
+              <span className="text-blue-600 dark:text-blue-400">{total.toLocaleString("vi-VN")}đ</span>
             </div>
           </div>
 
           {!isPaid ? (
             <button
               onClick={() => setShowModal(true)}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 dark:bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition flex items-center justify-center gap-2"
             >
               <CreditCard size={18} />
               Thanh toán ngay
             </button>
           ) : (
-            <div className="text-center text-green-600 font-medium py-2 flex items-center justify-center gap-2 bg-green-50 rounded-lg border border-green-100">
+            <div className="text-center text-green-600 dark:text-green-400 font-medium py-2 flex items-center justify-center gap-2 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-100 dark:border-green-900/30">
               <CheckCircle2 size={18} />
               Đã thanh toán thành công!
             </div>
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
-          <FileText className="mx-auto text-gray-300 mb-2" size={48} />
+        <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm p-8 text-center text-gray-500 dark:text-zinc-400">
+          <FileText className="mx-auto text-gray-300 dark:text-zinc-700 mb-2" size={48} />
           <p className="text-sm">Hiện tại bạn không có hóa đơn nào cần thanh toán.</p>
         </div>
       )}
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl text-gray-800">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl text-gray-800 dark:text-zinc-100 border border-gray-100 dark:border-zinc-800">
 
             {/* Header */}
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex justify-between items-center border-b dark:border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
                 {step === "confirm" && (
                   <button
                     onClick={() => setStep("select")}
-                    className="text-gray-400 hover:text-gray-600 text-sm"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-350 text-sm"
                   >
                     ← Quay lại
                   </button>
@@ -301,7 +302,7 @@ export default function TenantInvoice() {
                   {step === "select" ? "Chọn phương thức thanh toán" : "Thông tin thanh toán"}
                 </h3>
               </div>
-              <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleClose} className="text-gray-400 hover:text-gray-650 dark:hover:text-zinc-350">
                 <X size={20} />
               </button>
             </div>
@@ -316,20 +317,20 @@ export default function TenantInvoice() {
                       onClick={() => setSelectedMethod(m.id)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition text-left ${
                         selectedMethod === m.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/20"
+                          : "border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
                         {m.icon}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-800">{m.label}</p>
-                        <p className="text-xs text-gray-400">{m.description}</p>
+                        <p className="font-medium text-sm text-gray-800 dark:text-zinc-200">{m.label}</p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-550">{m.description}</p>
                       </div>
                       {selectedMethod === m.id
-                        ? <CheckCircle2 size={18} className="text-blue-500" />
-                        : <ChevronRight size={18} className="text-gray-300" />
+                        ? <CheckCircle2 size={18} className="text-blue-500 dark:text-blue-400" />
+                        : <ChevronRight size={18} className="text-gray-300 dark:text-zinc-650" />
                       }
                     </button>
                   ))}
@@ -338,7 +339,7 @@ export default function TenantInvoice() {
                 <button
                   onClick={() => setStep("confirm")}
                   disabled={!selectedMethod}
-                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Tiếp tục
                 </button>
@@ -348,7 +349,7 @@ export default function TenantInvoice() {
             {/* Bước 2: Thông tin thanh toán */}
             {step === "confirm" && method && (
               <>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
+                <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 space-y-3 text-sm">
                   {method.id === "bank" && (
                     <>
                       <InfoRow label="Ngân hàng" value={method.detail.bankName!} />
@@ -386,18 +387,18 @@ export default function TenantInvoice() {
                   )}
                 </div>
 
-                <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-3">
+                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-zinc-400 border-t dark:border-zinc-800 pt-3">
                   <span>Số tiền cần chuyển</span>
-                  <span className="font-bold text-blue-600 text-base">{total.toLocaleString("vi-VN")}đ</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400 text-base">{total.toLocaleString("vi-VN")}đ</span>
                 </div>
 
-                <p className="text-xs text-gray-400 text-center">
+                <p className="text-xs text-gray-400 dark:text-zinc-500 text-center">
                   Sau khi chuyển tiền xong, nhấn xác nhận bên dưới
                 </p>
 
                 <button
                   onClick={handleConfirmPaid}
-                  className="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition flex items-center justify-center gap-2"
+                  className="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 dark:hover:bg-green-550 transition flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 size={18} />
                   Tôi đã chuyển tiền
@@ -423,13 +424,13 @@ function InfoRow({
   copied?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center text-gray-800">
-      <span className="text-gray-500">{label}</span>
+    <div className="flex justify-between items-center text-gray-800 dark:text-zinc-200">
+      <span className="text-gray-500 dark:text-zinc-455">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="font-medium">{value}</span>
+        <span className="font-medium text-gray-900 dark:text-zinc-100">{value}</span>
         {onCopy && (
-          <button onClick={onCopy} className="text-gray-400 hover:text-blue-500 transition">
-            {copied ? <CheckCircle2 size={14} className="text-green-500" /> : <Copy size={14} />}
+          <button onClick={onCopy} className="text-gray-400 dark:text-zinc-550 hover:text-blue-500 dark:hover:text-blue-400 transition">
+            {copied ? <CheckCircle2 size={14} className="text-green-500 dark:text-green-400" /> : <Copy size={14} />}
           </button>
         )}
       </div>

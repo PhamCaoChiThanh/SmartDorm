@@ -25,6 +25,7 @@ namespace SmartDorm.Api.Data
         public DbSet<PostLike> PostLikes { get; set; } = null!;
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<CommentLike> CommentLikes { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

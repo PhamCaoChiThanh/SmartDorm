@@ -201,6 +201,22 @@ namespace SmartDorm.Api.Controllers
                     _context.PostLikes.Add(like);
                     post.LikesCount += 1;
                     isLiked = true;
+
+                    // Create Notification
+                    if (post.UserId != currentUserId)
+                    {
+                        var notification = new Notification
+                        {
+                            RecipientId = post.UserId,
+                            SenderId = currentUserId,
+                            Type = "LIKE_POST",
+                            PostId = post.Id,
+                            Content = "đã thích bài viết của bạn.",
+                            IsRead = false,
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.Notifications.Add(notification);
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -296,17 +312,17 @@ namespace SmartDorm.Api.Controllers
             {
                 var currentUserId = GetCurrentUserId();
 
-                var postExists = await _context.Posts.AnyAsync(p => p.Id == id);
-                if (!postExists)
+                var post = await _context.Posts.FindAsync(id);
+                if (post == null)
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy bài viết để bình luận." });
                 }
 
-                // If parent comment is provided, check if it exists
+                Comment? parentComment = null;
                 if (dto.ParentId.HasValue)
                 {
-                    var parentCommentExists = await _context.Comments.AnyAsync(c => c.Id == dto.ParentId.Value);
-                    if (!parentCommentExists)
+                    parentComment = await _context.Comments.FindAsync(dto.ParentId.Value);
+                    if (parentComment == null)
                     {
                         return BadRequest(new { success = false, message = "Không tìm thấy bình luận gốc để trả lời." });
                     }
@@ -325,6 +341,48 @@ namespace SmartDorm.Api.Controllers
 
                 _context.Comments.Add(comment);
                 await _context.SaveChangesAsync();
+
+                // Create Notification
+                if (dto.ParentId.HasValue && parentComment != null)
+                {
+                    // Case 2: Reply to comment
+                    if (parentComment.UserId != currentUserId)
+                    {
+                        var notification = new Notification
+                        {
+                            RecipientId = parentComment.UserId,
+                            SenderId = currentUserId,
+                            Type = "REPLY_COMMENT",
+                            PostId = post.Id,
+                            CommentId = comment.Id,
+                            Content = "đã trả lời bình luận của bạn.",
+                            IsRead = false,
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.Notifications.Add(notification);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    // Case 1: Comment on post
+                    if (post.UserId != currentUserId)
+                    {
+                        var notification = new Notification
+                        {
+                            RecipientId = post.UserId,
+                            SenderId = currentUserId,
+                            Type = "COMMENT_POST",
+                            PostId = post.Id,
+                            CommentId = comment.Id,
+                            Content = "đã bình luận về bài viết của bạn.",
+                            IsRead = false,
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.Notifications.Add(notification);
+                        await _context.SaveChangesAsync();
+                    }
+                }
 
                 var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == currentUserId);
                 var user = await _context.Users.FindAsync(currentUserId);

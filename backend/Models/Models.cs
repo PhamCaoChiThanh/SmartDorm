@@ -70,7 +70,6 @@ namespace SmartDorm.Api.Models
         public UserRole Role { get; set; } = UserRole.TENANT;
 
         [Column("avatar_url")]
-        [MaxLength(255)]
         public string? AvatarUrl { get; set; }
 
         [Column("created_at")]
@@ -578,4 +577,54 @@ namespace SmartDorm.Api.Models
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
     }
+
+    [Table("notifications")]
+    public class Notification
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("recipient_id")]
+        [Required]
+        public Guid RecipientId { get; set; }
+
+        [ForeignKey(nameof(RecipientId))]
+        public User? Recipient { get; set; }
+
+        [Column("sender_id")]
+        [Required]
+        public Guid SenderId { get; set; }
+
+        [ForeignKey(nameof(SenderId))]
+        public User? Sender { get; set; }
+
+        [Column("type")]
+        [Required]
+        [MaxLength(50)]
+        public string Type { get; set; } = string.Empty; // LIKE_POST, COMMENT_POST, REPLY_COMMENT
+
+        [Column("post_id")]
+        public Guid? PostId { get; set; }
+
+        [ForeignKey(nameof(PostId))]
+        public Post? Post { get; set; }
+
+        [Column("comment_id")]
+        public Guid? CommentId { get; set; }
+
+        [ForeignKey(nameof(CommentId))]
+        public Comment? Comment { get; set; }
+
+        [Column("content")]
+        [Required]
+        public string Content { get; set; } = string.Empty;
+
+        [Column("is_read")]
+        public bool IsRead { get; set; } = false;
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
 }
+
