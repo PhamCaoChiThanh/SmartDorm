@@ -31,6 +31,9 @@ namespace SmartDorm.Api.Controllers
             public string? Email { get; set; }
             public string Password { get; set; } = string.Empty;
             public string? Role { get; set; }
+            public string? FullName { get; set; }
+            public string? Cccd { get; set; }
+            public string? Phone { get; set; }
         }
 
         [HttpPost("register")]
@@ -41,6 +44,63 @@ namespace SmartDorm.Api.Controllers
                 return BadRequest(new { message = "Username và Password không được để trống." });
             }
 
+            if (dto.Password.Length < 6)
+            {
+                return BadRequest(new { message = "Mật khẩu phải có ít nhất 6 ký tự." });
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"[A-Z]"))
+            {
+                return BadRequest(new { message = "Mật khẩu phải chứa ít nhất 1 chữ cái in hoa." });
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"[a-z]"))
+            {
+                return BadRequest(new { message = "Mật khẩu phải chứa ít nhất 1 chữ cái thường." });
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"[0-9]"))
+            {
+                return BadRequest(new { message = "Mật khẩu phải chứa ít nhất 1 chữ số." });
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"[^A-Za-z0-9]"))
+            {
+                return BadRequest(new { message = "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt." });
+            }
+
+            // Parse role
+            UserRole role = UserRole.TENANT;
+            if (!string.IsNullOrEmpty(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var parsedRole))
+            {
+                role = parsedRole;
+            }
+
+            // Validate fields for TENANT
+            if (role == UserRole.TENANT)
+            {
+                if (string.IsNullOrWhiteSpace(dto.FullName) || string.IsNullOrWhiteSpace(dto.Cccd))
+                {
+                    return BadRequest(new { message = "Họ tên và CCCD không được để trống." });
+                }
+
+                if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Cccd.Trim(), @"^\d{12}$"))
+                {
+                    return BadRequest(new { message = "Số CCCD phải có đúng 12 chữ số." });
+                }
+
+                if (!string.IsNullOrEmpty(dto.Phone) && !System.Text.RegularExpressions.Regex.IsMatch(dto.Phone.Trim(), @"^\d{10}$"))
+                {
+                    return BadRequest(new { message = "Số điện thoại phải có đúng 10 chữ số." });
+                }
+
+                if (!string.IsNullOrEmpty(dto.Email) && !System.Text.RegularExpressions.Regex.IsMatch(dto.Email.Trim(), @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
+                {
+                    return BadRequest(new { message = "Địa chỉ email không đúng định dạng." });
+                }
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 1. Check existing user
@@ -50,15 +110,17 @@ namespace SmartDorm.Api.Controllers
                     return BadRequest(new { message = "Username hoặc Email đã tồn tại." });
                 }
 
+                if (role == UserRole.TENANT && !string.IsNullOrEmpty(dto.Cccd))
+                {
+                    var cccdExists = await _context.Tenants.AnyAsync(t => t.Cccd == dto.Cccd);
+                    if (cccdExists)
+                    {
+                        return BadRequest(new { message = "Số CCCD này đã được đăng ký." });
+                    }
+                }
+
                 // 2. Hash password
                 string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-                // 3. Parse role
-                UserRole role = UserRole.TENANT;
-                if (!string.IsNullOrEmpty(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var parsedRole))
-                {
-                    role = parsedRole;
-                }
 
                 var user = new User
                 {
@@ -70,6 +132,22 @@ namespace SmartDorm.Api.Controllers
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                if (role == UserRole.TENANT)
+                {
+                    var tenant = new Tenant
+                    {
+                        UserId = user.Id,
+                        FullName = dto.FullName ?? string.Empty,
+                        Cccd = dto.Cccd ?? string.Empty,
+                        Phone = dto.Phone,
+                        Email = dto.Email
+                    };
+                    _context.Tenants.Add(tenant);
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
 
                 return StatusCode(201, new
                 {
@@ -85,6 +163,7 @@ namespace SmartDorm.Api.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { message = "Lỗi server khi đăng ký.", error = ex.Message });
             }
         }

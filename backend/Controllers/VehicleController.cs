@@ -9,7 +9,7 @@ using SmartDorm.Api.Models;
 
 namespace SmartDorm.Api.Controllers
 {
-    [Authorize(Roles = "ADMIN,MANAGER")]
+    [Authorize]
     [ApiController]
     [Route("api/vehicles")]
     public class VehicleController : ControllerBase
@@ -22,12 +22,37 @@ namespace SmartDorm.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "ADMIN,MANAGER,TENANT")]
         public async Task<IActionResult> GetAllVehicles()
         {
             try
             {
-                var vehicles = await _context.Vehicles
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? User.FindFirst("id");
+                var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role) ?? User.FindFirst("role");
+
+                if (userIdClaim == null || roleClaim == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin định danh." });
+                }
+
+                var userId = Guid.Parse(userIdClaim.Value);
+                var role = roleClaim.Value;
+
+                var query = _context.Vehicles
                     .Include(v => v.Tenant)
+                    .AsQueryable();
+
+                if (role == "TENANT")
+                {
+                    var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == userId);
+                    if (tenant == null)
+                    {
+                        return Ok(new { success = true, data = new List<object>() });
+                    }
+                    query = query.Where(v => v.TenantId == tenant.Id);
+                }
+
+                var vehicles = await query
                     .OrderByDescending(v => v.CreatedAt)
                     .Select(v => new
                     {
@@ -52,29 +77,66 @@ namespace SmartDorm.Api.Controllers
 
         public class RegisterVehicleDto
         {
-            public Guid TenantId { get; set; }
+            public Guid? TenantId { get; set; }
             public string LicensePlate { get; set; } = string.Empty;
             public string? VehicleModel { get; set; }
             public string Type { get; set; } = string.Empty;
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN,MANAGER,TENANT")]
         public async Task<IActionResult> RegisterVehicle([FromBody] RegisterVehicleDto dto)
         {
-            if (!Enum.TryParse<VehicleType>(dto.Type, true, out var vehicleType))
-            {
-                return BadRequest(new { success = false, message = "Loại xe không hợp lệ (BICYCLE, MOTORBIKE, CAR)." });
-            }
-
             if (string.IsNullOrWhiteSpace(dto.LicensePlate))
             {
                 return BadRequest(new { success = false, message = "Biển số xe không được để trống." });
             }
 
+            // Map Vietnamese or English vehicle type to enum
+            string typeStr = dto.Type.ToUpper().Trim();
+            if (typeStr == "XE MÁY" || typeStr == "MOTORBIKE") typeStr = "MOTORBIKE";
+            else if (typeStr == "XE ĐẠP" || typeStr == "BICYCLE") typeStr = "BICYCLE";
+            else if (typeStr == "Ô TÔ" || typeStr == "CAR") typeStr = "CAR";
+
+            if (!Enum.TryParse<VehicleType>(typeStr, true, out var vehicleType))
+            {
+                return BadRequest(new { success = false, message = "Loại xe không hợp lệ (BICYCLE, MOTORBIKE, CAR)." });
+            }
+
             try
             {
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? User.FindFirst("id");
+                var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role) ?? User.FindFirst("role");
+
+                if (userIdClaim == null || roleClaim == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin định danh." });
+                }
+
+                var userId = Guid.Parse(userIdClaim.Value);
+                var role = roleClaim.Value;
+
+                Guid finalTenantId = dto.TenantId ?? Guid.Empty;
+
+                if (role == "TENANT")
+                {
+                    var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == userId);
+                    if (tenant == null)
+                    {
+                        return BadRequest(new { success = false, message = "Bạn chưa hoàn tất cập nhật hồ sơ sinh viên." });
+                    }
+                    finalTenantId = tenant.Id;
+                }
+                else
+                {
+                    if (finalTenantId == Guid.Empty)
+                    {
+                        return BadRequest(new { success = false, message = "TenantId không được để trống đối với Admin/Manager." });
+                    }
+                }
+
                 // Verify tenant exists
-                var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == dto.TenantId);
+                var tenantExists = await _context.Tenants.AnyAsync(t => t.Id == finalTenantId);
                 if (!tenantExists)
                 {
                     return BadRequest(new { success = false, message = "Không tìm thấy thông tin sinh viên." });
@@ -89,7 +151,7 @@ namespace SmartDorm.Api.Controllers
 
                 var vehicle = new Vehicle
                 {
-                    TenantId = dto.TenantId,
+                    TenantId = finalTenantId,
                     LicensePlate = dto.LicensePlate,
                     VehicleModel = dto.VehicleModel,
                     Type = vehicleType
@@ -107,6 +169,7 @@ namespace SmartDorm.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,TENANT")]
         public async Task<IActionResult> RemoveVehicle(Guid id)
         {
             try
@@ -115,6 +178,26 @@ namespace SmartDorm.Api.Controllers
                 if (vehicle == null)
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy xe để xóa." });
+                }
+
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? User.FindFirst("id");
+                var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role) ?? User.FindFirst("role");
+
+                if (userIdClaim == null || roleClaim == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin định danh." });
+                }
+
+                var userId = Guid.Parse(userIdClaim.Value);
+                var role = roleClaim.Value;
+
+                if (role == "TENANT")
+                {
+                    var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == userId);
+                    if (tenant == null || vehicle.TenantId != tenant.Id)
+                    {
+                        return Unauthorized(new { success = false, message = "Bạn không có quyền xóa phương tiện này." });
+                    }
                 }
 
                 _context.Vehicles.Remove(vehicle);

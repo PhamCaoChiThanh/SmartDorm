@@ -1,15 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
-const logs = [
-  { id: 1, user: "admin@smartdorm.com", action: "APPROVE_REQUEST", entity: "room_requests", entityId: "REQ-001", createdAt: "2025-05-13 08:30:00" },
-  { id: 2, user: "admin@smartdorm.com", action: "CREATE_CONTRACT", entity: "contracts", entityId: "HD-2025-001", createdAt: "2025-05-13 08:35:00" },
-  { id: 3, user: "admin@smartdorm.com", action: "UPDATE_UTILITY", entity: "utility_usages", entityId: "UTIL-001", createdAt: "2025-05-13 09:00:00" },
-  { id: 4, user: "tenant@smartdorm.com", action: "CREATE_MAINTENANCE", entity: "maintenances", entityId: "MNT-001", createdAt: "2025-05-13 09:15:00" },
-  { id: 5, user: "tenant@smartdorm.com", action: "SUBMIT_PAYMENT", entity: "payments", entityId: "PAY-001", createdAt: "2025-05-13 10:00:00" },
-  { id: 6, user: "admin@smartdorm.com", action: "REJECT_REQUEST", entity: "room_requests", entityId: "REQ-002", createdAt: "2025-05-13 10:30:00" },
-];
+import { useState, useEffect } from "react";
+import { fetchAPI } from "@/lib/api";
+import { AlertCircle } from "lucide-react";
 
 const actionColor: Record<string, string> = {
   APPROVE_REQUEST: "bg-green-100 text-green-700",
@@ -21,13 +14,51 @@ const actionColor: Record<string, string> = {
 };
 
 export default function AdminAudit() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  const filtered = logs.filter((l) =>
-    l.user.toLowerCase().includes(search.toLowerCase()) ||
-    l.action.toLowerCase().includes(search.toLowerCase()) ||
-    l.entity.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    async function loadAuditLogs() {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetchAPI("/audit");
+        if (res.success && Array.isArray(res.data)) {
+          setLogs(res.data);
+        }
+      } catch (err: any) {
+        console.error("Lỗi khi tải lịch sử hoạt động:", err);
+        setError("Không thể tải lịch sử hoạt động từ máy chủ.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadAuditLogs();
+  }, []);
+
+  const filtered = logs.filter((l) => {
+    const user = l.user || "";
+    const action = l.action || "";
+    const entity = l.entity || "";
+
+    return (
+      user.toLowerCase().includes(search.toLowerCase()) ||
+      action.toLowerCase().includes(search.toLowerCase()) ||
+      entity.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+        <p className="text-gray-500 text-sm">Đang tải lịch sử hoạt động...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -38,7 +69,14 @@ export default function AdminAudit() {
         </div>
       </div>
 
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo user, hành động, bảng..." className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white mb-4" />
+      {error && (
+        <div className="bg-red-50 text-red-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2 border border-red-100">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo user, hành động, bảng..." className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white mb-4 text-gray-800" />
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
@@ -52,15 +90,27 @@ export default function AdminAudit() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((log) => (
-              <tr key={log.id} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{log.createdAt}</td>
-                <td className="px-4 py-3 font-medium">{log.user}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${actionColor[log.action] || "bg-gray-100 text-gray-600"}`}>{log.action}</span></td>
-                <td className="px-4 py-3 text-gray-500">{log.entity}</td>
-                <td className="px-4 py-3 text-blue-600">{log.entityId}</td>
+            {filtered.length > 0 ? (
+              filtered.map((log) => (
+                <tr key={log.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{log.createdAt}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800">{log.user}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${actionColor[log.action] || "bg-gray-100 text-gray-600"}`}>
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">{log.entity}</td>
+                  <td className="px-4 py-3 text-blue-600 font-mono text-xs max-w-[150px] truncate">{log.entityId || "—"}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="text-center py-6 text-gray-400">
+                  Không tìm thấy hoạt động nào.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

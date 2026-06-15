@@ -1,24 +1,75 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-const history = [
-  { id: 1, issue: "Điều hòa hỏng", date: "2025-05-09", status: "OPEN" },
-  { id: 2, issue: "Đèn phòng tắt", date: "2025-04-20", status: "DONE" },
-];
+import { useEffect, useState } from "react";
+import { fetchAPI } from "@/lib/api";
 
 export default function TenantMaintenance() {
   const router = useRouter();
   const [issue, setIssue] = useState("");
   const [note, setNote] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = () => {
-    if (!issue) return;
-    setSubmitted(true);
-    setIssue("");
-    setNote("");
+  const loadMaintenanceHistory = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetchAPI("/maintenances");
+      if (res.success && Array.isArray(res.data)) {
+        setHistory(res.data);
+      } else {
+        setError(res.message || "Không thể tải lịch sử báo hỏng.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError("Không thể kết nối đến máy chủ.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMaintenanceHistory();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!issue.trim()) return;
+
+    try {
+      setSubmitting(true);
+      setMessage("");
+      setError("");
+
+      const fullDescription = note.trim() 
+        ? `${issue.trim()} - Ghi chú: ${note.trim()}`
+        : issue.trim();
+
+      const res = await fetchAPI("/maintenances", {
+        method: "POST",
+        body: JSON.stringify({
+          description: fullDescription
+        })
+      });
+
+      if (res.success) {
+        setMessage("Đã gửi yêu cầu báo hỏng thành công!");
+        setIssue("");
+        setNote("");
+        // Reload list
+        loadMaintenanceHistory();
+      } else {
+        setError(res.message || "Không thể gửi báo cáo sự cố.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Đã xảy ra lỗi khi gửi yêu cầu.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -34,9 +85,15 @@ export default function TenantMaintenance() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h2 className="font-semibold mb-3">Gửi yêu cầu sửa chữa</h2>
 
-          {submitted && (
+          {message && (
             <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-3">
-              ✅ Đã gửi yêu cầu thành công! Ban quản lý sẽ xử lý sớm.
+              ✅ {message}
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-3">
+              ❌ {error}
             </div>
           )}
 
@@ -62,9 +119,10 @@ export default function TenantMaintenance() {
             </div>
             <button
               onClick={handleSubmit}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+              disabled={submitting || !issue.trim()}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
             >
-              Gửi yêu cầu
+              {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
             </button>
           </div>
         </div>
@@ -72,21 +130,37 @@ export default function TenantMaintenance() {
         {/* Lịch sử */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h2 className="font-semibold mb-3">📋 Lịch sử báo hỏng</h2>
-          {history.map((h) => (
-            <div key={h.id} className="flex justify-between items-center py-2 border-b last:border-0">
-              <div>
-                <p className="text-sm font-medium">{h.issue}</p>
-                <p className="text-xs text-gray-400">{h.date}</p>
+          {loading ? (
+            <div className="text-center py-6 text-gray-500 text-sm">Đang tải lịch sử báo hỏng...</div>
+          ) : history.length > 0 ? (
+            history.map((h) => (
+              <div key={h.id} className="flex justify-between items-center py-2.5 border-b last:border-0 hover:bg-gray-50/50 px-1 rounded-lg">
+                <div className="max-w-[70%]">
+                  <p className="text-sm font-medium text-gray-800 wrap-break-word">{h.description}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(h.createdAt).toLocaleDateString("vi-VN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  h.status === "OPEN"
+                    ? "bg-red-100 text-red-600"
+                    : h.status === "IN_PROGRESS"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-green-100 text-green-700"
+                }`}>
+                  {h.status === "OPEN" ? "Chờ xử lý" : h.status === "IN_PROGRESS" ? "Đang xử lý" : "Hoàn thành"}
+                </span>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                h.status === "OPEN"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-green-100 text-green-700"
-              }`}>
-                {h.status}
-              </span>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className="text-center py-6 text-gray-400 text-sm">Bạn chưa gửi báo cáo sự cố nào.</div>
+          )}
         </div>
       </div>
     </div>

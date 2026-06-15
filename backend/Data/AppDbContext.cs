@@ -17,6 +17,10 @@ namespace SmartDorm.Api.Data
         public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<UtilityUsage> UtilityUsages { get; set; } = null!;
         public DbSet<Vehicle> Vehicles { get; set; } = null!;
+        public DbSet<RoomRequest> RoomRequests { get; set; } = null!;
+        public DbSet<Maintenance> Maintenances { get; set; } = null!;
+        public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+        public DbSet<Deposit> Deposits { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,6 +49,14 @@ namespace SmartDorm.Api.Data
 
             modelBuilder.Entity<Vehicle>()
                 .Property(e => e.Type)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<RoomRequest>()
+                .Property(e => e.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Maintenance>()
+                .Property(e => e.Status)
                 .HasConversion<string>();
         }
     }

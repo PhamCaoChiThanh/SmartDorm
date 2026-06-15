@@ -199,6 +199,37 @@ export default function RoomDetailPage() {
       setShowRegisterModal(true);
     }
   }, [rawId]);
+  
+  useEffect(() => {
+    async function loadTenantProfile() {
+      if (isLoggedIn && currentRole === "TENANT") {
+        try {
+          const [profileRes, vehiclesRes] = await Promise.all([
+            fetchAPI("/tenants/me"),
+            fetchAPI("/vehicles"),
+          ]);
+          if (profileRes.success && profileRes.data) {
+            setRegisterForm((prev) => ({
+              ...prev,
+              cccd: profileRes.data.cccd || "",
+            }));
+            setScheduleForm((prev) => ({
+              ...prev,
+              name: profileRes.data.fullName || prev.name,
+              phone: profileRes.data.phone || prev.phone,
+            }));
+          }
+          if (vehiclesRes.success && Array.isArray(vehiclesRes.data) && vehiclesRes.data.length > 0) {
+            const firstPlate = vehiclesRes.data[0].license_plate || "";
+            setRegisterForm((prev) => ({ ...prev, vehicle: firstPlate }));
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải thông tin người thuê để điền tự động:", err);
+        }
+      }
+    }
+    loadTenantProfile();
+  }, [isLoggedIn, currentRole]);
 
   if (!room) return <div className="p-8 text-center text-gray-500">Không tìm thấy phòng!</div>;
 
@@ -233,19 +264,36 @@ export default function RoomDetailPage() {
     }, 1500);
   };
 
-  const handleRegisterSubmit = () => {
-    if (!registerForm.cccd || !registerForm.moveDate) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      setShowRegisterModal(false);
-      setSubmitted(false);
-      const role = localStorage.getItem("currentRole");
-      if (role === "TENANT") {
-        router.push("/tenant/contract");
+  const [registerError, setRegisterError] = useState("");
+
+  const handleRegisterSubmit = async () => {
+    if (!registerForm.cccd || !registerForm.moveDate) {
+      setRegisterError("Vui lòng điền đầy đủ CCCD và ngày chuyển vào.");
+      return;
+    }
+    setRegisterError("");
+    try {
+      const res = await fetchAPI("/requests", {
+        method: "POST",
+        body: JSON.stringify({
+          roomId: room.id,
+          moveInDate: registerForm.moveDate,
+          note: registerForm.note || "",
+        }),
+      });
+      if (res.success) {
+        setSubmitted(true);
+        setTimeout(() => {
+          setShowRegisterModal(false);
+          setSubmitted(false);
+          router.push("/tenant/contract");
+        }, 2000);
       } else {
-        router.push("/owner/dashboard");
+        setRegisterError(res.message || "Gửi yêu cầu thất bại.");
       }
-    }, 1500);
+    } catch (err: any) {
+      setRegisterError(err.message || "Gửi yêu cầu thất bại.");
+    }
   };
 
   return (
@@ -576,7 +624,7 @@ export default function RoomDetailPage() {
                 <div>
                   <label className="text-sm font-medium mb-1 block text-gray-700">CCCD *</label>
                   <input type="text" value={registerForm.cccd} onChange={(e) => setRegisterForm({ ...registerForm, cccd: e.target.value })}
-                    placeholder="079123456789" className={inputCls} />
+                    placeholder="079123456789" className={inputCls} readOnly={!!registerForm.cccd} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block text-gray-700">Ngày chuyển vào *</label>
@@ -586,12 +634,20 @@ export default function RoomDetailPage() {
                   <label className="text-sm font-medium mb-1 block text-gray-700">Xe (nếu có)</label>
                   <input type="text" value={registerForm.vehicle} onChange={(e) => setRegisterForm({ ...registerForm, vehicle: e.target.value })}
                     placeholder="59X1-12345" className={inputCls} />
+                  {registerForm.vehicle && (
+                    <p className="text-xs text-green-600 mt-1">✓ Đã tải biển số xe từ hồ sơ của bạn</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block text-gray-700">Ghi chú</label>
                   <textarea value={registerForm.note} onChange={(e) => setRegisterForm({ ...registerForm, note: e.target.value })}
                     rows={2} className={inputCls} placeholder="Yêu cầu đặc biệt..." />
                 </div>
+                {registerError && (
+                  <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-3 py-2">
+                    {registerError}
+                  </div>
+                )}
                 <button onClick={handleRegisterSubmit}
                   className="w-full text-white py-3 rounded-xl font-semibold text-sm transition hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F97316 100%)" }}>

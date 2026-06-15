@@ -7,6 +7,7 @@ const navItems = [
   { label: "Hợp đồng", icon: "📄", path: "/tenant/contract" },
   { label: "Báo hỏng", icon: "🔧", path: "/tenant/maintenance" },
   { label: "Gửi xe", icon: "🚗", path: "/tenant/parking" },
+  { label: "Hồ sơ", icon: "👤", path: "/tenant/profile" },
 ];
 
 export default function TenantLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,10 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm px-4 py-3 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
+        <div
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <span className="text-xl">🏠</span>
           <span className="font-bold text-blue-600">SmartDorm</span>
         </div>
@@ -36,7 +40,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-10">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {navItems.map((item) => (
             <button
               key={item.label}

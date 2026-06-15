@@ -1,23 +1,107 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Car, FileText } from "lucide-react";
-
-const vehicles = [
-  { id: 1, plate: "59X1-12345", type: "Xe máy", status: "ACTIVE" },
-];
+import { useEffect, useState } from "react";
+import { fetchAPI } from "@/lib/api";
+import { Car, FileText, Trash2 } from "lucide-react";
 
 export default function TenantParking() {
   const router = useRouter();
   const [plate, setPlate] = useState("");
   const [type, setType] = useState("Xe máy");
-  const [submitted, setSubmitted] = useState(false);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = () => {
-    if (!plate) return;
-    setSubmitted(true);
-    setPlate("");
+  const loadVehicles = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetchAPI("/vehicles");
+      if (res.success && Array.isArray(res.data)) {
+        setVehicles(res.data);
+      } else {
+        setError(res.message || "Không thể tải danh sách xe.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Không thể kết nối đến máy chủ.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVehicles();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!plate.trim()) return;
+
+    try {
+      setSubmitting(true);
+      setMessage("");
+      setError("");
+
+      const res = await fetchAPI("/vehicles", {
+        method: "POST",
+        body: JSON.stringify({
+          licensePlate: plate.trim(),
+          type: type,
+        }),
+      });
+
+      if (res.success) {
+        setMessage("Đăng ký xe thành công!");
+        setPlate("");
+        // Reload list
+        loadVehicles();
+      } else {
+        setError(res.message || "Không thể đăng ký phương tiện.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Đã xảy ra lỗi khi đăng ký xe.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa phương tiện này?")) return;
+
+    try {
+      setError("");
+      setMessage("");
+      const res = await fetchAPI(`/vehicles/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.success) {
+        setMessage("Đã xóa phương tiện thành công.");
+        loadVehicles();
+      } else {
+        setError(res.message || "Không thể xóa phương tiện.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Đã xảy ra lỗi khi xóa xe.");
+    }
+  };
+
+  const getVehicleTypeLabel = (typeStr: string) => {
+    switch (typeStr?.toUpperCase()) {
+      case "MOTORBIKE":
+        return "Xe máy";
+      case "BICYCLE":
+        return "Xe đạp";
+      case "CAR":
+        return "Ô tô";
+      default:
+        return typeStr;
+    }
   };
 
   return (
@@ -40,9 +124,15 @@ export default function TenantParking() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h2 className="font-semibold mb-3">Đăng ký phương tiện mới</h2>
 
-          {submitted && (
+          {message && (
             <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-3">
-              ✅ Đăng ký thành công! Phí gửi xe sẽ được cộng vào hóa đơn tháng sau.
+              ✅ {message}
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-3">
+              ❌ {error}
             </div>
           )}
 
@@ -61,7 +151,7 @@ export default function TenantParking() {
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option>Xe máy</option>
                 <option>Xe đạp</option>
@@ -70,9 +160,10 @@ export default function TenantParking() {
             </div>
             <button
               onClick={handleSubmit}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+              disabled={submitting || !plate.trim()}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
             >
-              Đăng ký
+              {submitting ? "Đang đăng ký..." : "Đăng ký"}
             </button>
           </div>
         </div>
@@ -82,17 +173,35 @@ export default function TenantParking() {
           <h2 className="font-semibold mb-3 flex items-center gap-2">
             <Car size={16} className="text-gray-500" /> Xe đang đăng ký
           </h2>
-          {vehicles.map((v) => (
-            <div key={v.id} className="flex justify-between items-center py-2 border-b last:border-0">
-              <div>
-                <p className="text-sm font-medium">{v.plate}</p>
-                <p className="text-xs text-gray-400">{v.type}</p>
-              </div>
-              <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
-                {v.status}
-              </span>
+
+          {loading ? (
+            <div className="text-center py-6 text-gray-500 text-sm">Đang tải danh sách phương tiện...</div>
+          ) : vehicles.length > 0 ? (
+            <div className="space-y-2.5">
+              {vehicles.map((v) => (
+                <div key={v.id} className="flex justify-between items-center py-2.5 border-b last:border-0 hover:bg-gray-50/50 px-1 rounded-lg">
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{v.license_plate || v.LicensePlate}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{getVehicleTypeLabel(v.type)}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-green-100 text-green-700">
+                      Đã duyệt
+                    </span>
+                    <button
+                      onClick={() => handleDelete(v.id)}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded-lg transition"
+                      title="Xóa phương tiện"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="text-center py-6 text-gray-400 text-sm">Bạn chưa đăng ký xe nào.</div>
+          )}
         </div>
       </div>
     </div>

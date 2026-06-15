@@ -19,6 +19,17 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     },
   });
 
+  if (response.status === 401 && endpoint !== "/auth/login") {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("currentRole");
+      localStorage.removeItem("currentName");
+      window.location.href = "/login";
+    }
+    throw new Error("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.");
+  }
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Something went wrong');

@@ -186,6 +186,35 @@ namespace SmartDorm.Api.Models
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 
+    [Table("deposits")]
+    public class Deposit
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("contract_id")]
+        public Guid? ContractId { get; set; }
+
+        [ForeignKey(nameof(ContractId))]
+        public Contract? Contract { get; set; }
+
+        [Column("total_amount")]
+        public decimal TotalAmount { get; set; }
+
+        [Column("remaining_balance")]
+        public decimal RemainingBalance { get; set; }
+
+        [Column("status")]
+        public string Status { get; set; } = "HOLDING";
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
     [Table("invoices")]
     public class Invoice
     {
@@ -316,5 +345,129 @@ namespace SmartDorm.Api.Models
 
         [Column("updated_at")]
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    public enum RequestStatus
+    {
+        PENDING,
+        APPROVED,
+        REJECTED
+    }
+
+    public enum MaintenanceStatus
+    {
+        OPEN,
+        IN_PROGRESS,
+        DONE
+    }
+
+    [Table("room_requests")]
+    public class RoomRequest
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("tenant_id")]
+        public Guid? TenantId { get; set; }
+
+        [ForeignKey(nameof(TenantId))]
+        public Tenant? Tenant { get; set; }
+
+        [Column("room_id")]
+        public Guid? RoomId { get; set; }
+
+        [ForeignKey(nameof(RoomId))]
+        public Room? Room { get; set; }
+
+        [Column("note")]
+        public string? Note { get; set; }
+
+        [Column("move_in_date")]
+        public DateOnly? MoveInDate { get; set; }
+
+        [Column("status")]
+        public RequestStatus Status { get; set; } = RequestStatus.PENDING;
+
+        [Column("admin_note")]
+        public string? AdminNote { get; set; }
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("maintenances")]
+    public class Maintenance
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("room_id")]
+        public Guid? RoomId { get; set; }
+
+        [ForeignKey(nameof(RoomId))]
+        public Room? Room { get; set; }
+
+        [Column("reported_by")]
+        public Guid? ReportedBy { get; set; }
+
+        [ForeignKey(nameof(ReportedBy))]
+        public Tenant? Tenant { get; set; }
+
+        [Column("description")]
+        public string? Description { get; set; }
+
+        [Column("status")]
+        public MaintenanceStatus Status { get; set; } = MaintenanceStatus.OPEN;
+
+        [Column("assigned_to")]
+        [MaxLength(100)]
+        public string? AssignedTo { get; set; }
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("audit_logs")]
+    public class AuditLog
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("user_id")]
+        public Guid? UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public User? User { get; set; }
+
+        [Column("action")]
+        [Required]
+        [MaxLength(100)]
+        public string Action { get; set; } = string.Empty;
+
+        [Column("entity_name")]
+        [Required]
+        [MaxLength(100)]
+        public string EntityName { get; set; } = string.Empty;
+
+        [Column("entity_id")]
+        public Guid? EntityId { get; set; }
+
+        [Column("old_value", TypeName = "jsonb")]
+        public string? OldValue { get; set; }
+
+        [Column("new_value", TypeName = "jsonb")]
+        public string? NewValue { get; set; }
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 }

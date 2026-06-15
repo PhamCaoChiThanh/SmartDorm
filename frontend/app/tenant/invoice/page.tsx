@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchAPI } from "@/lib/api";
 import {
   Bell,
   FileText,
@@ -12,25 +13,8 @@ import {
   Wallet,
   ChevronRight,
   Copy,
+  AlertCircle
 } from "lucide-react";
-
-const invoice = {
-  month: "Tháng 5/2025",
-  room: "P101",
-  items: [
-    { label: "Tiền phòng", amount: 1500000 },
-    { label: "Tiền điện (150 số)", amount: 225000 },
-    { label: "Tiền nước (8 khối)", amount: 56000 },
-    { label: "Phí khác", amount: 20000 },
-  ],
-  status: "PENDING",
-  dueDate: "2025-05-20",
-};
-
-const notifications = [
-  { id: 1, message: "Hóa đơn tháng 5 đã được tạo", time: "2 giờ trước", read: false },
-  { id: 2, message: "Yêu cầu thuê phòng P101 đã được duyệt", time: "2 ngày trước", read: true },
-];
 
 const paymentMethods = [
   {
@@ -41,8 +25,8 @@ const paymentMethods = [
     detail: {
       bankName: "Vietcombank",
       accountNumber: "1234 5678 9012",
-      accountName: "NGUYEN VAN A",
-      content: "SMARTDORM P101 T5/2025",
+      accountName: "SmartDorm",
+      content: "SMARTDORM COMPLETED T5/2025",
     },
   },
   {
@@ -53,7 +37,7 @@ const paymentMethods = [
     detail: {
       phone: "0909 123 456",
       accountName: "SmartDorm",
-      content: "SMARTDORM P101 T5/2025",
+      content: "SMARTDORM COMPLETED T5/2025",
     },
   },
   {
@@ -64,7 +48,7 @@ const paymentMethods = [
     detail: {
       phone: "0909 888 999",
       accountName: "SmartDorm",
-      content: "SMARTDORM P101 T5/2025",
+      content: "SMARTDORM COMPLETED T5/2025",
     },
   },
 ];
@@ -72,14 +56,82 @@ const paymentMethods = [
 type Step = "select" | "confirm";
 
 export default function TenantInvoice() {
-  const [paid, setPaid] = useState(false);
+  const [invoice, setInvoice] = useState<any>(null);
+  const [room, setRoom] = useState<any>(null);
+  const [roomNumber, setRoomNumber] = useState("—");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("select");
   const [copied, setCopied] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const total = invoice.items.reduce((sum, i) => sum + i.amount, 0);
-  const method = paymentMethods.find((m) => m.id === selectedMethod);
+  async function loadInvoiceData() {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetchAPI("/tenants/me");
+      if (res.success && res.data) {
+        setRoom(res.data.room);
+        setRoomNumber(res.data.room?.roomNumber || res.data.room?.room_number || "—");
+        const invoices = res.data.invoices || [];
+        const requests = res.data.requests || [];
+        
+        // Tạo danh sách thông báo động real-time
+        const dynamicNotifications = [];
+        let notifId = 1;
+
+        // 1. Thông báo cho yêu cầu thuê phòng đã được duyệt
+        const approvedRequest = requests.find((r: any) => r.status === "APPROVED");
+        if (approvedRequest) {
+          dynamicNotifications.push({
+            id: notifId++,
+            message: `Yêu cầu thuê phòng ${approvedRequest.roomNumber || ""} đã được duyệt`,
+            time: "2 ngày trước",
+            read: true
+          });
+        } else if (requests.length > 0) {
+          const latestReq = requests[0];
+          dynamicNotifications.push({
+            id: notifId++,
+            message: `Yêu cầu thuê phòng ${latestReq.roomNumber || ""} đang ở trạng thái ${latestReq.status === "PENDING" ? "Chờ duyệt" : "Từ chối"}`,
+            time: "Vừa xong",
+            read: false
+          });
+        }
+
+        // 2. Thông báo cho hóa đơn
+        if (invoices.length > 0) {
+          const latestInvoice = invoices[0];
+          const invoicePaid = latestInvoice.status === "PAID" || latestInvoice.status === "ĐÃ THANH TOÁN";
+          dynamicNotifications.push({
+            id: notifId++,
+            message: `Hóa đơn tháng ${latestInvoice.billingMonth}/${latestInvoice.billingYear} đã được tạo`,
+            time: "2 giờ trước",
+            read: invoicePaid
+          });
+        }
+
+        setNotifications(dynamicNotifications);
+
+        if (invoices.length > 0) {
+          setInvoice(invoices[0]);
+        } else {
+          setInvoice(null);
+        }
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi tải hóa đơn:", err);
+      setError("Không thể tải thông tin hóa đơn từ máy chủ.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadInvoiceData();
+  }, []);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -93,84 +145,149 @@ export default function TenantInvoice() {
     setSelectedMethod(null);
   };
 
-  const handleConfirmPaid = () => {
-    handleClose();
-    setPaid(true);
+  const handleConfirmPaid = async () => {
+    if (!invoice) return;
+    try {
+      const res = await fetchAPI(`/invoices/${invoice.id}/pay`, {
+        method: "POST",
+        body: JSON.stringify({
+          paymentMethod: selectedMethod === "bank" ? "BANK_TRANSFER" : selectedMethod?.toUpperCase() || "CASH"
+        })
+      });
+      if (res.success) {
+        setInvoice((prev: any) => ({ ...prev, status: "PAID" }));
+        // Cập nhật thông báo đã đọc sau khi thanh toán thành công
+        setNotifications(prev => prev.map(n => n.message.includes("Hóa đơn") ? { ...n, read: true } : n));
+        handleClose();
+      } else {
+        alert(res.message || "Giao dịch thanh toán thất bại.");
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi thanh toán:", err);
+      alert(err.message || "Có lỗi xảy ra khi xử lý thanh toán.");
+    }
   };
+
+  const electricityPrice = room?.electricityPrice || 3500;
+  const waterPrice = room?.waterPrice || 15000;
+  const garbageFee = room?.garbageFee || 50000;
+
+  const electricUnits = invoice?.electricFee ? Math.round(invoice.electricFee / electricityPrice) : 0;
+  const waterUnits = invoice?.waterFee ? Math.round(invoice.waterFee / waterPrice) : 0;
+
+  const invoiceItems = invoice
+    ? [
+        { label: "Tiền phòng", amount: invoice.roomFee || 0 },
+        ...(invoice.electricFee > 0 ? [{ label: `Tiền điện (${electricUnits} số)`, amount: invoice.electricFee }] : []),
+        ...(invoice.waterFee > 0 ? [{ label: `Tiền nước (${waterUnits} khối)`, amount: invoice.waterFee }] : []),
+        ...(garbageFee > 0 ? [{ label: "Phí rác", amount: garbageFee }] : []),
+      ]
+    : [];
+
+  const total = invoiceItems.reduce((sum, i) => sum + i.amount, 0);
+  const method = paymentMethods.find((m) => m.id === selectedMethod);
+  const isPaid = invoice?.status === "PAID" || invoice?.status === "ĐÃ THANH TOÁN";
+
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+        <p className="text-gray-500 text-sm">Đang tải hóa đơn của bạn...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4 pb-24">
       {/* Thông báo */}
       <div className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-3 flex items-center gap-2">
+        <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
           <Bell size={16} className="text-yellow-500" />
           Thông báo
         </h2>
-        {notifications.map((n) => (
-          <div
-            key={n.id}
-            className={`py-2 border-b last:border-0 flex justify-between items-start ${
-              !n.read ? "font-medium" : "text-gray-400"
-            }`}
-          >
-            <span className="text-sm">{n.message}</span>
-            <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{n.time}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Hóa đơn */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold flex items-center gap-2">
-            <FileText size={16} className="text-gray-500" />
-            {invoice.month}
-          </h2>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-            paid ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-          }`}>
-            {paid ? "ĐÃ THANH TOÁN" : "PENDING"}
-          </span>
-        </div>
-
-        <p className="text-sm text-gray-500 mb-3">Phòng: {invoice.room} · Hạn: {invoice.dueDate}</p>
-
-        <div className="space-y-2 mb-4">
-          {invoice.items.map((item) => (
-            <div key={item.label} className="flex justify-between text-sm">
-              <span className="text-gray-600">{item.label}</span>
-              <span>{item.amount.toLocaleString("vi-VN")}đ</span>
+        {notifications.length > 0 ? (
+          notifications.map((n) => (
+            <div
+              key={n.id}
+              className={`py-2 border-b last:border-0 flex justify-between items-start ${
+                !n.read ? "font-medium" : "text-gray-400"
+              }`}
+            >
+              <span className="text-sm">{n.message}</span>
+              <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{n.time}</span>
             </div>
-          ))}
-          <div className="flex justify-between font-bold text-base border-t pt-2 mt-2">
-            <span>Tổng cộng</span>
-            <span className="text-blue-600">{total.toLocaleString("vi-VN")}đ</span>
-          </div>
-        </div>
-
-        {!paid ? (
-          <button
-            onClick={() => setShowModal(true)}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
-          >
-            <CreditCard size={18} />
-            Thanh toán ngay
-          </button>
+          ))
         ) : (
-          <div className="text-center text-green-600 font-medium py-2 flex items-center justify-center gap-2">
-            <CheckCircle2 size={18} />
-            Đã thanh toán thành công!
-          </div>
+          <p className="text-sm text-gray-400 py-2">Không có thông báo nào mới.</p>
         )}
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-700 text-sm p-4 rounded-xl flex items-center gap-2 border border-red-100">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Hóa đơn */}
+      {invoice ? (
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-semibold flex items-center gap-2 text-gray-800">
+              <FileText size={16} className="text-gray-500" />
+              Tháng {invoice.billingMonth}/{invoice.billingYear}
+            </h2>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+              isPaid ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+            }`}>
+              {isPaid ? "ĐÃ THANH TOÁN" : "PENDING"}
+            </span>
+          </div>
+
+          <p className="text-sm text-gray-500 mb-3">Phòng: {roomNumber} · Hạn: {invoice.dueDate || `${invoice.billingYear}-${String(invoice.billingMonth).padStart(2, '0')}-20`}</p>
+
+          <div className="space-y-2 mb-4">
+            {invoiceItems.map((item) => (
+              <div key={item.label} className="flex justify-between text-sm text-gray-600">
+                <span>{item.label}</span>
+                <span className="font-medium text-gray-800">{item.amount.toLocaleString("vi-VN")}đ</span>
+              </div>
+            ))}
+            <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-gray-800">
+              <span>Tổng cộng</span>
+              <span className="text-blue-600">{total.toLocaleString("vi-VN")}đ</span>
+            </div>
+          </div>
+
+          {!isPaid ? (
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            >
+              <CreditCard size={18} />
+              Thanh toán ngay
+            </button>
+          ) : (
+            <div className="text-center text-green-600 font-medium py-2 flex items-center justify-center gap-2 bg-green-50 rounded-lg border border-green-100">
+              <CheckCircle2 size={18} />
+              Đã thanh toán thành công!
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
+          <FileText className="mx-auto text-gray-300 mb-2" size={48} />
+          <p className="text-sm">Hiện tại bạn không có hóa đơn nào cần thanh toán.</p>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl">
+          <div className="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl text-gray-800">
 
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center border-b pb-2">
               <div className="flex items-center gap-2">
                 {step === "confirm" && (
                   <button
@@ -203,11 +320,11 @@ export default function TenantInvoice() {
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                         {m.icon}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{m.label}</p>
+                        <p className="font-medium text-sm text-gray-800">{m.label}</p>
                         <p className="text-xs text-gray-400">{m.description}</p>
                       </div>
                       {selectedMethod === m.id
@@ -244,8 +361,8 @@ export default function TenantInvoice() {
                       <InfoRow label="Chủ tài khoản" value={method.detail.accountName!} />
                       <InfoRow
                         label="Nội dung CK"
-                        value={method.detail.content!}
-                        onCopy={() => handleCopy(method.detail.content!, "content")}
+                        value={`SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}`}
+                        onCopy={() => handleCopy(`SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}`, "content")}
                         copied={copied === "content"}
                       />
                     </>
@@ -261,8 +378,8 @@ export default function TenantInvoice() {
                       <InfoRow label="Tên tài khoản" value={method.detail.accountName!} />
                       <InfoRow
                         label="Nội dung"
-                        value={method.detail.content!}
-                        onCopy={() => handleCopy(method.detail.content!, "content")}
+                        value={`SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}`}
+                        onCopy={() => handleCopy(`SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}`, "content")}
                         copied={copied === "content"}
                       />
                     </>
@@ -306,7 +423,7 @@ function InfoRow({
   copied?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center">
+    <div className="flex justify-between items-center text-gray-800">
       <span className="text-gray-500">{label}</span>
       <div className="flex items-center gap-2">
         <span className="font-medium">{value}</span>

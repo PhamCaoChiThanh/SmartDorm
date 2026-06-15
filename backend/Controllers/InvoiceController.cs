@@ -154,7 +154,7 @@ namespace SmartDorm.Api.Controllers
         }
 
         [HttpPost("{id}/pay")]
-        [Authorize(Roles = "ADMIN,MANAGER")]
+        [Authorize(Roles = "ADMIN,MANAGER,TENANT")]
         public async Task<IActionResult> PayInvoice(Guid id, [FromBody] PayInvoiceDto dto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();

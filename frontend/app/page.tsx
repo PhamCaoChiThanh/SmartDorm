@@ -347,7 +347,10 @@ export default function HomePage() {
       <header className={`sticky top-0 z-50 transition-all duration-300 header-blur ${scrolled ? "scrolled" : ""}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div
+            onClick={() => router.push("/")}
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
+          >
             <div className="w-9 h-9 rounded-xl flex items-center justify-center glow-btn">
               <Home size={18} className="text-white" />
             </div>
@@ -368,10 +371,19 @@ export default function HomePage() {
           <div className="flex gap-3 items-center">
             {currentName ? (
               <>
-                <div className="hidden md:flex items-center gap-2 text-sm text-gray-600 bg-white border border-gray-100 px-3 py-1.5 rounded-full shadow-sm">
+                <button
+                  onClick={() => {
+                    if (currentRole === "TENANT") {
+                      router.push("/tenant/profile");
+                    } else if (currentRole === "ADMIN" || currentRole === "MANAGER") {
+                      router.push("/owner/profile");
+                    }
+                  }}
+                  className="hidden md:flex items-center gap-2 text-sm text-gray-600 bg-white border border-gray-100 px-3 py-1.5 rounded-full shadow-sm hover:bg-gray-50 transition cursor-pointer"
+                >
                   <User size={13} className="text-violet-500" />
                   <span className="font-medium">{currentName}</span>
-                </div>
+                </button>
                 {(currentRole === "ADMIN" || currentRole === "MANAGER") && (
                   <button
                     onClick={() => {

@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
-const initialContracts = [
-  { id: "HD-2025-001", tenantName: "Nguyễn Văn A", room: "P101", startDate: "2025-01-01", endDate: "2025-12-31", basePrice: 1500000, status: "ACTIVE" },
-  { id: "HD-2025-002", tenantName: "Trần Thị B", room: "P102", startDate: "2025-02-01", endDate: "2025-08-01", basePrice: 1500000, status: "ACTIVE" },
-  { id: "HD-2024-003", tenantName: "Lê Văn C", room: "P201", startDate: "2024-06-01", endDate: "2025-01-01", basePrice: 2000000, status: "EXPIRED" },
-];
+import { useState, useEffect } from "react";
+import { fetchAPI } from "@/lib/api";
+import { AlertCircle } from "lucide-react";
 
 const statusColor: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -15,29 +11,76 @@ const statusColor: Record<string, string> = {
 };
 
 export default function AdminContracts() {
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
 
-  const filtered = initialContracts.filter((c) => {
-    const matchFilter = filter === "ALL" || c.status === filter;
-    const matchSearch = c.tenantName.toLowerCase().includes(search.toLowerCase()) || c.room.toLowerCase().includes(search.toLowerCase()) || c.id.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    async function loadContracts() {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetchAPI("/contracts");
+        if (res.success && Array.isArray(res.data)) {
+          setContracts(res.data);
+        }
+      } catch (err: any) {
+        console.error("Lỗi khi tải hợp đồng:", err);
+        setError("Không thể tải danh sách hợp đồng từ máy chủ.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadContracts();
+  }, []);
+
+  const filtered = contracts.filter((c) => {
+    const tenantName = c.tenant_name || "";
+    const room = c.room_number || "";
+    const id = c.id || "";
+    const status = c.status || "";
+
+    const matchFilter = filter === "ALL" || status === filter;
+    const matchSearch =
+      tenantName.toLowerCase().includes(search.toLowerCase()) ||
+      room.toLowerCase().includes(search.toLowerCase()) ||
+      id.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col justify-center items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+        <p className="text-gray-500 text-sm">Đang tải danh sách hợp đồng...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">📋 Quản lý Hợp đồng</h2>
-          <p className="text-sm text-gray-500">{initialContracts.length} hợp đồng</p>
+          <p className="text-sm text-gray-500">{contracts.length} hợp đồng</p>
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 text-red-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2 border border-red-100">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-4 mb-4">
         {[
-          { label: "Đang hiệu lực", value: initialContracts.filter(c => c.status === "ACTIVE").length, color: "text-green-600" },
-          { label: "Đã hết hạn", value: initialContracts.filter(c => c.status === "EXPIRED").length, color: "text-gray-500" },
-          { label: "Đã chấm dứt", value: initialContracts.filter(c => c.status === "TERMINATED").length, color: "text-red-500" },
+          { label: "Đang hiệu lực", value: contracts.filter(c => c.status === "ACTIVE").length, color: "text-green-600" },
+          { label: "Đã hết hạn", value: contracts.filter(c => c.status === "EXPIRED").length, color: "text-gray-500" },
+          { label: "Đã chấm dứt", value: contracts.filter(c => c.status === "TERMINATED").length, color: "text-red-500" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl shadow-sm p-4 text-center">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -69,17 +112,25 @@ export default function AdminContracts() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((c) => (
-              <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-blue-600">{c.id}</td>
-                <td className="px-4 py-3">{c.tenantName}</td>
-                <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">{c.room}</span></td>
-                <td className="px-4 py-3 text-gray-500">{c.startDate}</td>
-                <td className="px-4 py-3 text-gray-500">{c.endDate}</td>
-                <td className="px-4 py-3 font-medium">{c.basePrice.toLocaleString("vi-VN")}đ</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[c.status]}`}>{c.status}</span></td>
+            {filtered.length > 0 ? (
+              filtered.map((c) => (
+                <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-blue-600 truncate max-w-[120px]">{c.id}</td>
+                  <td className="px-4 py-3">{c.tenant_name || "—"}</td>
+                  <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">{c.room_number || "—"}</span></td>
+                  <td className="px-4 py-3 text-gray-500">{c.start_date || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500">{c.end_date || "—"}</td>
+                  <td className="px-4 py-3 font-medium">{(c.base_price || 0).toLocaleString("vi-VN")}đ</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[c.status] || "bg-gray-100 text-gray-600"}`}>{c.status === "ACTIVE" ? "ACTIVE" : c.status === "EXPIRED" ? "EXPIRED" : "TERMINATED"}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="text-center py-6 text-gray-400">
+                  Không tìm thấy hợp đồng nào.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

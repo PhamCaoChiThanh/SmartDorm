@@ -37,6 +37,7 @@ namespace SmartDorm.Api.Controllers
                         tenant_name = c.Tenant != null ? c.Tenant.FullName : string.Empty,
                         c.RoomId,
                         room_number = c.Room != null ? c.Room.RoomNumber : string.Empty,
+                        base_price = c.Room != null ? c.Room.BasePrice : 0,
                         start_date = c.StartDate,
                         end_date = c.EndDate,
                         c.Status,

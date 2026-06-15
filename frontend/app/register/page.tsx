@@ -22,11 +22,59 @@ export default function RegisterPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "", color: "bg-gray-200", width: "w-0" };
+    
+    let score = 0;
+    if (pass.length >= 6) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+    
+    let color = "bg-red-500";
+    let label = "Yếu";
+    let width = "w-1/3";
+    
+    if (score >= 4 && pass.length >= 6) {
+      if (score === 5) {
+        color = "bg-green-500";
+        label = "Mạnh";
+        width = "w-full";
+      } else {
+        color = "bg-amber-500";
+        label = "Trung bình";
+        width = "w-2/3";
+      }
+    } else if (score >= 3 && pass.length >= 6) {
+      color = "bg-amber-500";
+      label = "Trung bình";
+      width = "w-2/3";
+    }
+    
+    return { score, label, color, width };
+  };
+
   const handleRegister = async () => {
     setError("");
 
     if (!form.fullName || !form.cccd || !form.email || !form.username || !form.password) {
       setError("Vui lòng điền đầy đủ thông tin!");
+      return;
+    }
+
+    if (!/^\d{12}$/.test(form.cccd.trim())) {
+      setError("Số CCCD phải có đúng 12 chữ số!");
+      return;
+    }
+
+    if (form.phone && !/^\d{10}$/.test(form.phone.trim())) {
+      setError("Số điện thoại phải có đúng 10 chữ số!");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError("Địa chỉ email không đúng định dạng!");
       return;
     }
 
@@ -37,6 +85,26 @@ export default function RegisterPage() {
 
     if (form.password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    if (!/[A-Z]/.test(form.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ cái in hoa!");
+      return;
+    }
+
+    if (!/[a-z]/.test(form.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ cái thường!");
+      return;
+    }
+
+    if (!/[0-9]/.test(form.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ số!");
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(form.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, ...).");
       return;
     }
 
@@ -51,6 +119,9 @@ export default function RegisterPage() {
           email: form.email,
           password: form.password,
           role: "TENANT",
+          fullName: form.fullName,
+          cccd: form.cccd,
+          phone: form.phone || null,
         }),
       });
 
@@ -155,6 +226,27 @@ export default function RegisterPage() {
               placeholder="••••••••"
               className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {form.password && (() => {
+              const strength = getPasswordStrength(form.password);
+              return (
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-[11px] font-medium">
+                    <span className="text-gray-400">Độ mạnh mật khẩu:</span>
+                    <span className={strength.score === 5 ? "text-green-600 font-semibold" : strength.score >= 3 ? "text-amber-600 font-semibold" : "text-red-500 font-semibold"}>
+                      {strength.label}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${strength.color} ${strength.width}`}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 leading-tight">
+                    Yêu cầu: tối thiểu 6 ký tự, gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           <div>

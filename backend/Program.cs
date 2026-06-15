@@ -15,7 +15,11 @@ using Amazon.S3;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // Configure AWS Lambda Hosting
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
@@ -92,5 +96,7 @@ app.MapGet("/", () => Results.Text("SmartDorm C# Web API is running successfully
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok("OK"));
+
+// Seed database
 
 app.Run();
