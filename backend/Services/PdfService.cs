@@ -455,7 +455,7 @@ namespace SmartDorm.Api.Services
                             {
                                 col.Item().Row(r =>
                                 {
-                                    r.RelativeItem().Text("TỔNG CỘNG:").Bold().FontSize(11f).FontColor(Colors.Blue.Darken3);
+                                    r.AutoItem().Text("TỔNG CỘNG:").Bold().FontSize(11f).FontColor(Colors.Blue.Darken3);
                                     r.AutoItem().PaddingLeft(20).Text($"{invoice.TotalAmount:N0} VND").Bold().FontSize(12f).FontColor(Colors.Red.Darken2);
                                 });
                                 col.Item().PaddingTop(2).Text($"Hạn thanh toán: ngày 05/{invoice.BillingMonth}/{invoice.BillingYear}").Italic().FontSize(8f).FontColor(Colors.Grey.Darken1);

@@ -200,6 +200,44 @@ namespace SmartDorm.Api.Controllers
             }
         }
 
+        [HttpGet("{id}/pdf")]
+        [Authorize(Roles = "ADMIN,MANAGER,TENANT")]
+        public async Task<IActionResult> DownloadInvoicePdf(Guid id)
+        {
+            try
+            {
+                var invoice = await _context.Invoices
+                    .Include(i => i.Contract)
+                        .ThenInclude(c => c!.Tenant)
+                    .Include(i => i.Contract)
+                        .ThenInclude(c => c!.Room)
+                    .FirstOrDefaultAsync(i => i.Id == id);
+
+                if (invoice == null)
+                    return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
+
+                var tenant = invoice.Contract?.Tenant;
+                var room = invoice.Contract?.Room;
+
+                if (tenant == null || room == null)
+                    return BadRequest(new { success = false, message = "Thiếu thông tin tenant hoặc phòng" });
+
+                // Fetch utility usages for this billing period
+                var usages = await _context.UtilityUsages
+                    .Where(u => u.RoomId == room.Id && u.BillingMonth == invoice.BillingMonth && u.BillingYear == invoice.BillingYear)
+                    .ToListAsync();
+
+                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages);
+                var fileName = $"HoaDon_Phong{room.RoomNumber}_T{invoice.BillingMonth}_{invoice.BillingYear}.pdf";
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi tạo PDF", error = ex.Message });
+            }
+        }
+
         [HttpPost("{id}/send")]
         [Authorize(Roles = "ADMIN,MANAGER")]
         public async Task<IActionResult> SendInvoice(Guid id)
@@ -220,7 +258,7 @@ namespace SmartDorm.Api.Controllers
                 var room = invoice.Contract?.Room;
 
                 if (tenant == null || string.IsNullOrEmpty(tenant.Email))
-                    return BadRequest(new { success = false, message = "Không có email sinh viên." });
+                    return BadRequest(new { success = false, message = $"Không có email sinh viên. Tenant: {tenant?.FullName}, Email: {tenant?.Email ?? "null"}" });
 
                 if (room == null)
                     return BadRequest(new { success = false, message = "Không tìm thấy thông tin phòng." });
@@ -252,7 +290,7 @@ namespace SmartDorm.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi khi gửi hóa đơn", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Lỗi khi gửi hóa đơn", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
     }
