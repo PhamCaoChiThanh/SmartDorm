@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { fetchAPI, API_URL } from "@/lib/api";
 import { exportToCSV } from "@/lib/export";
-import { AlertCircle, Send, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { AlertCircle, Send, Plus, Pencil, Trash2, FileSpreadsheet, FileDown } from "lucide-react";
 
 const statusLabel: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Chờ thanh toán", cls: "bg-yellow-100 text-yellow-700" },
@@ -235,6 +235,22 @@ export default function AdminInvoices() {
     );
   }
 
+  const formatDateTime = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "—";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleString("vi-VN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   const handleExportExcel = () => {
     const headers = [
       "ID Hóa Đơn",
@@ -247,6 +263,8 @@ export default function AdminInvoices() {
       "Tổng Tiền (VNĐ)",
       "Đã Thanh Toán (VNĐ)",
       "Trạng Thái",
+      "Ngày Gửi Bill",
+      "Ngày Thanh Toán",
       "Ngày Tạo"
     ];
     const keys = [
@@ -260,11 +278,15 @@ export default function AdminInvoices() {
       "total_amount",
       "paid_amount",
       "status",
+      "sent_at",
+      "payment_date",
       "created_at"
     ];
     const formatted = filtered.map(inv => ({
       ...inv,
       status: inv.status === "PAID" ? "Đã thanh toán" : inv.status === "OVERDUE" ? "Quá hạn" : "Chờ thanh toán",
+      sent_at: inv.sent_at ? new Date(inv.sent_at).toLocaleString("vi-VN") : "—",
+      payment_date: inv.payment_date ? new Date(inv.payment_date).toLocaleString("vi-VN") : "—",
       created_at: new Date(inv.created_at || inv.createdAt).toLocaleDateString("vi-VN")
     }));
     exportToCSV(formatted, `DanhSachHoaDon_${filter}`, headers, keys);
@@ -344,6 +366,8 @@ export default function AdminInvoices() {
               <th className="text-right px-4 py-3">Nước</th>
               <th className="text-right px-4 py-3">Tổng cộng</th>
               <th className="text-left px-4 py-3">Trạng thái</th>
+              <th className="text-left px-4 py-3">Gửi lúc</th>
+              <th className="text-left px-4 py-3">Thanh toán lúc</th>
               <th className="text-right px-4 py-3">Hành động</th>
             </tr>
           </thead>
@@ -369,23 +393,44 @@ export default function AdminInvoices() {
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${st.cls}`}>{st.label}</span>
                     </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-normal">
+                      {formatDateTime(inv.sent_at)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-normal">
+                      {formatDateTime(inv.payment_date)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2 items-center">
-                        <button
-                          onClick={() => handleOpenEdit(inv)}
-                          title="Sửa hóa đơn"
-                          className="p-1 text-gray-500 hover:text-blue-600 transition"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteInvoice(inv.id)}
-                          title="Xóa hóa đơn"
-                          className="p-1 text-gray-500 hover:text-red-600 transition mr-2"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                        {isSent ? (
+                        {inv.status !== "PAID" && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEdit(inv)}
+                              title="Sửa hóa đơn"
+                              className="p-1 text-gray-500 hover:text-blue-600 transition"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvoice(inv.id)}
+                              title="Xóa hóa đơn"
+                              className="p-1 text-gray-500 hover:text-red-600 transition"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDownloadPdf(inv.id, inv.room_number, inv.billing_month, inv.billing_year)}
+                              title="Xuất PDF hóa đơn"
+                              className="p-1 text-gray-500 hover:text-emerald-600 transition mr-2"
+                            >
+                              <FileDown size={14} />
+                            </button>
+                          </>
+                        )}
+                        {inv.status === "PAID" ? (
+                          <span className="text-green-600 text-xs font-semibold flex items-center gap-1">
+                            ✅ Đã thanh toán
+                          </span>
+                        ) : isSent ? (
                           <span className="text-green-600 text-xs font-semibold">✅ Đã gửi!</span>
                         ) : (
                           <button

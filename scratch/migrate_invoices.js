@@ -11,13 +11,11 @@ const pool = new Pool({
 
 async function run() {
   try {
-    const res = await pool.query(`
-      SELECT c.id, c.room_id, r.room_number, c.tenant_id, t.full_name, t.email, c.status
-      FROM contracts c
-      JOIN rooms r ON c.room_id = r.id
-      JOIN tenants t ON c.tenant_id = t.id
+    await pool.query(`
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;
     `);
-    console.log(JSON.stringify(res.rows, null, 2));
+    console.log('Migration completed successfully.');
   } catch (err) {
     console.error(err);
   } finally {

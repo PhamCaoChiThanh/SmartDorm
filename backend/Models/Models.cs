@@ -258,6 +258,12 @@ namespace SmartDorm.Api.Models
         [Column("status")]
         public InvoiceStatus Status { get; set; } = InvoiceStatus.PENDING;
 
+        [Column("sent_at")]
+        public DateTimeOffset? SentAt { get; set; }
+
+        [Column("payment_date")]
+        public DateTimeOffset? PaymentDate { get; set; }
+
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

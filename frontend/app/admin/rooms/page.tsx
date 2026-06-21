@@ -10,6 +10,7 @@ export default function AdminRooms() {
   const [contracts, setContracts] = useState<any[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [utilities, setUtilities] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
@@ -25,11 +26,12 @@ export default function AdminRooms() {
         setLoading(true);
         setError("");
 
-        const [roomsRes, contractsRes, tenantsRes, utilitiesRes] = await Promise.all([
+        const [roomsRes, contractsRes, tenantsRes, utilitiesRes, invoicesRes] = await Promise.all([
           fetchAPI("/rooms"),
           fetchAPI("/contracts"),
           fetchAPI("/tenants"),
-          fetchAPI("/utilities")
+          fetchAPI("/utilities"),
+          fetchAPI("/invoices")
         ]);
 
         if (roomsRes.success && Array.isArray(roomsRes.data)) {
@@ -46,6 +48,10 @@ export default function AdminRooms() {
 
         if (utilitiesRes.success && Array.isArray(utilitiesRes.data)) {
           setUtilities(utilitiesRes.data);
+        }
+
+        if (invoicesRes && invoicesRes.success && Array.isArray(invoicesRes.data)) {
+          setInvoices(invoicesRes.data);
         }
       } catch (err: any) {
         console.error("Lỗi khi tải danh sách phòng:", err);
@@ -79,6 +85,17 @@ export default function AdminRooms() {
       mappedStatus = "FULL";
     }
 
+    // Find latest invoice for this room
+    const roomInvoices = invoices.filter(
+      (inv) => inv.room_id === room.id || inv.room_number === roomNumber
+    );
+    const latestInvoice = roomInvoices.sort((a, b) => {
+      if (b.billing_year !== a.billing_year) {
+        return b.billing_year - a.billing_year;
+      }
+      return b.billing_month - a.billing_month;
+    })[0] || null;
+
     return {
       id: room.id,
       number: roomNumber,
@@ -87,7 +104,8 @@ export default function AdminRooms() {
       current: currentCount,
       price: room.basePrice || room.base_price || 0,
       status: mappedStatus, // FULL, AVAILABLE, MAINTENANCE
-      rawRoom: room // Store raw room object for details
+      rawRoom: room, // Store raw room object for details
+      latestInvoice
     };
   });
 
@@ -171,6 +189,17 @@ export default function AdminRooms() {
           (t) => t.id === c.tenantId || t.id === c.tenant_id
         );
 
+        let latestInvoiceVal = "Chưa có hóa đơn";
+        let paymentStatusVal = "Chưa có";
+        if (room.latestInvoice) {
+          latestInvoiceVal = `${(room.latestInvoice.total_amount || 0).toLocaleString("vi-VN")}đ (Tháng ${room.latestInvoice.billing_month}/${room.latestInvoice.billing_year})`;
+          paymentStatusVal = room.latestInvoice.status === "PAID"
+            ? "Đã thanh toán"
+            : room.latestInvoice.status === "OVERDUE"
+            ? "Quá hạn"
+            : "Chờ thanh toán";
+        }
+
         dataToExport.push({
           roomNumber: room.number,
           floor: room.floor,
@@ -182,6 +211,8 @@ export default function AdminRooms() {
           contractPeriod: `${formatDate(c.start_date || c.startDate)} - ${formatDate(c.end_date || c.endDate)}`,
           electricIndex: electricVal,
           waterIndex: waterVal,
+          invoiceAmount: latestInvoiceVal,
+          invoiceStatus: paymentStatusVal,
         });
       });
     });
@@ -199,7 +230,9 @@ export default function AdminRooms() {
         "Email",
         "Thời hạn hợp đồng",
         "Chỉ số điện mới nhất",
-        "Chỉ số nước mới nhất"
+        "Chỉ số nước mới nhất",
+        "Tiền thanh toán cuối tháng (Hóa đơn mới nhất)",
+        "Trạng thái thanh toán"
       ],
       [
         "roomNumber",
@@ -211,7 +244,9 @@ export default function AdminRooms() {
         "tenantEmail",
         "contractPeriod",
         "electricIndex",
-        "waterIndex"
+        "waterIndex",
+        "invoiceAmount",
+        "invoiceStatus"
       ]
     );
   };
@@ -347,6 +382,36 @@ export default function AdminRooms() {
             <div className="text-sm font-semibold text-blue-600">
               {room.price.toLocaleString("vi-VN")}đ / người / tháng
             </div>
+
+            {room.latestInvoice ? (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                <div>
+                  <span className="text-gray-450 block font-normal">Hóa đơn T{room.latestInvoice.billing_month}/{room.latestInvoice.billing_year}:</span>
+                  <span className="font-bold text-gray-850">
+                    {(room.latestInvoice.total_amount || 0).toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+                <span
+                  className={`px-2 py-0.5 rounded-md font-semibold border ${
+                    room.latestInvoice.status === "PAID"
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : room.latestInvoice.status === "OVERDUE"
+                      ? "bg-red-50 text-red-600 border-red-200"
+                      : "bg-yellow-50 text-yellow-700 border-yellow-250"
+                  }`}
+                >
+                  {room.latestInvoice.status === "PAID"
+                    ? "Đã thanh toán"
+                    : room.latestInvoice.status === "OVERDUE"
+                    ? "Quá hạn"
+                    : "Chờ thanh toán"}
+                </span>
+              </div>
+            ) : room.current > 0 ? (
+              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400 italic">
+                Chưa tạo hóa đơn tháng này
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -381,6 +446,50 @@ export default function AdminRooms() {
                   <strong className="text-blue-600 text-base">{selectedRoom.price.toLocaleString("vi-VN")}đ / người / tháng</strong>
                 </div>
               </div>
+
+              {/* Latest Invoice in Modal */}
+              {selectedRoom.latestInvoice && (
+                <div className="bg-gray-50 p-4 rounded-xl space-y-2 text-sm border border-gray-100">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500">
+                    🧾 Hóa đơn mới nhất (Tháng {selectedRoom.latestInvoice.billing_month}/{selectedRoom.latestInvoice.billing_year})
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="text-gray-400 text-xs block">Tiền phòng:</span>
+                      <span className="font-medium text-gray-800">{(selectedRoom.latestInvoice.room_fee || 0).toLocaleString("vi-VN")}đ</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs block">Tiền điện:</span>
+                      <span className="font-medium text-gray-800">{(selectedRoom.latestInvoice.electric_fee || 0).toLocaleString("vi-VN")}đ</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs block">Tiền nước:</span>
+                      <span className="font-medium text-gray-800">{(selectedRoom.latestInvoice.water_fee || 0).toLocaleString("vi-VN")}đ</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-gray-205 flex justify-between items-center">
+                    <div>
+                      <span className="text-gray-450 text-xs block font-semibold">Tổng cộng:</span>
+                      <span className="font-bold text-blue-600 text-base">{(selectedRoom.latestInvoice.total_amount || 0).toLocaleString("vi-VN")}đ</span>
+                    </div>
+                    <div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        selectedRoom.latestInvoice.status === "PAID"
+                          ? "bg-green-100 text-green-700"
+                          : selectedRoom.latestInvoice.status === "OVERDUE"
+                          ? "bg-red-100 text-red-650"
+                          : "bg-yellow-100 text-yellow-750"
+                      }`}>
+                        {selectedRoom.latestInvoice.status === "PAID"
+                          ? "Đã thanh toán"
+                          : selectedRoom.latestInvoice.status === "OVERDUE"
+                          ? "Quá hạn"
+                          : "Chờ thanh toán"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Occupants Info */}
               <div>

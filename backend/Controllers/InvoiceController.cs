@@ -52,6 +52,8 @@ namespace SmartDorm.Api.Controllers
                         total_amount = i.TotalAmount,
                         paid_amount = i.PaidAmount,
                         status = i.Status.ToString(),
+                        sent_at = i.SentAt,
+                        payment_date = i.PaymentDate,
                         created_at = i.CreatedAt,
                         updated_at = i.UpdatedAt
                     })
@@ -175,6 +177,7 @@ namespace SmartDorm.Api.Controllers
                 // Update invoice
                 invoice.Status = InvoiceStatus.PAID;
                 invoice.PaidAmount = invoice.TotalAmount ?? 0;
+                invoice.PaymentDate = DateTimeOffset.UtcNow;
                 invoice.UpdatedAt = DateTimeOffset.UtcNow;
 
                 // Create payment record
@@ -305,8 +308,11 @@ namespace SmartDorm.Api.Controllers
                     await _emailService.SendEmailAsync(recipient.Email!, subject, body, pdfBytes, fileName);
                 }
 
+                invoice.SentAt = DateTimeOffset.UtcNow;
+                await _context.SaveChangesAsync();
+
                 var sentEmailsList = string.Join(", ", validContracts.Select(c => c.Tenant!.Email));
-                return Ok(new { success = true, message = $"Gửi hóa đơn đến các thành viên trong phòng ({sentEmailsList}) thành công!" });
+                return Ok(new { success = true, message = $"Gửi hóa đơn đến các thành viên trong phòng ({sentEmailsList}) thành công!", data = new { sent_at = invoice.SentAt } });
             }
             catch (Exception ex)
             {
@@ -337,6 +343,14 @@ namespace SmartDorm.Api.Controllers
 
                 if (Enum.TryParse<InvoiceStatus>(dto.Status, true, out var status))
                 {
+                    if (status == InvoiceStatus.PAID && invoice.Status != InvoiceStatus.PAID)
+                    {
+                        invoice.PaymentDate = DateTimeOffset.UtcNow;
+                    }
+                    else if (status != InvoiceStatus.PAID)
+                    {
+                        invoice.PaymentDate = null;
+                    }
                     invoice.Status = status;
                 }
 

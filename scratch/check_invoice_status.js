@@ -11,13 +11,8 @@ const pool = new Pool({
 
 async function run() {
   try {
-    const res = await pool.query(`
-      SELECT c.id, c.room_id, r.room_number, c.tenant_id, t.full_name, t.email, c.status
-      FROM contracts c
-      JOIN rooms r ON c.room_id = r.id
-      JOIN tenants t ON c.tenant_id = t.id
-    `);
-    console.log(JSON.stringify(res.rows, null, 2));
+    const res = await pool.query('SELECT id, status, payment_date, sent_at FROM invoices');
+    console.log(res.rows);
   } catch (err) {
     console.error(err);
   } finally {

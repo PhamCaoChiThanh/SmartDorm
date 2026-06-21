@@ -12,12 +12,11 @@ const pool = new Pool({
 async function run() {
   try {
     const res = await pool.query(`
-      SELECT c.id, c.room_id, r.room_number, c.tenant_id, t.full_name, t.email, c.status
-      FROM contracts c
-      JOIN rooms r ON c.room_id = r.id
-      JOIN tenants t ON c.tenant_id = t.id
+      UPDATE invoices
+      SET contract_id = 'ebda69c4-6663-4c1f-bdcc-41a0862742a0'
+      WHERE id = 'c8dd3ec1-8e64-43a3-b2db-6161333ada17'
     `);
-    console.log(JSON.stringify(res.rows, null, 2));
+    console.log('Update result:', res.rowCount);
   } catch (err) {
     console.error(err);
   } finally {
