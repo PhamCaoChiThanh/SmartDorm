@@ -97,7 +97,12 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 
 app.UseCors("AllowAll");
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(app.Environment.ContentRootPath, "wwwroot")),
+    RequestPath = ""
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
