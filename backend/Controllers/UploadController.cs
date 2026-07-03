@@ -89,7 +89,7 @@ namespace SmartDorm.Api.Controllers
                 }
 
                 var fileExtension = Path.GetExtension(file.FileName);
-                var uniqueFileName = `${Guid.NewGuid()}${fileExtension}`;
+                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -98,18 +98,18 @@ namespace SmartDorm.Api.Controllers
                 }
 
                 var request = HttpContext.Request;
-                var fileUrl = `${request.Scheme}://${request.Host}/uploads/${uniqueFileName}`;
+                var fileUrl = $"{request.Scheme}://{request.Host}/uploads/{uniqueFileName}";
 
                 return Ok(new
                 {
                     Url = fileUrl,
-                    Key = `uploads/${uniqueFileName}`,
+                    Key = $"uploads/{uniqueFileName}",
                     FileName = file.FileName
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, `Lỗi hệ thống khi tải file lên: ${ex.Message}`);
+                return StatusCode(500, $"Lỗi hệ thống khi tải file lên: {ex.Message}");
             }
         }
     }
