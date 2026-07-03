@@ -42,6 +42,7 @@ builder.Services.AddHttpContextAccessor();
 // Register Email Service
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IPdfService, PdfService>();
+builder.Services.AddScoped<IOcrService, OcrService>();
 
 // Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

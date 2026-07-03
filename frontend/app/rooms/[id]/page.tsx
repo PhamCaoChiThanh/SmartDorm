@@ -578,9 +578,14 @@ export default function RoomDetailPage() {
                 <X size={20} />
               </button>
             </div>
-            <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
-              <Users size={14} className="text-purple-500" />
-              <span><strong>{room.name}</strong> — {room.price.toLocaleString("vi-VN")}đ/người/tháng</span>
+             <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 mb-4 text-sm flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-purple-500" />
+                <span><strong>{room.name}</strong> — {room.price.toLocaleString("vi-VN")}đ/người/tháng</span>
+              </div>
+              <div className="text-xs text-purple-700 mt-1 border-t border-purple-200/50 pt-1 font-medium">
+                👉 Tiền đặt cọc phòng: <span className="font-bold text-sm text-purple-800">{room.price.toLocaleString("vi-VN")}đ</span> (sẽ hoàn lại khi dọn đi và kết thúc hợp đồng).
+              </div>
             </div>
             {submitted ? (
               <div className="text-center py-8">

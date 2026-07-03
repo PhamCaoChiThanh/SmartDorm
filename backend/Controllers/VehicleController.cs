@@ -160,7 +160,26 @@ namespace SmartDorm.Api.Controllers
                 _context.Vehicles.Add(vehicle);
                 await _context.SaveChangesAsync();
 
-                return StatusCode(201, new { success = true, message = "Đăng ký xe thành công", data = vehicle });
+                // Auto-create an APPROVED Monthly Parking Registration for this vehicle
+                decimal fee = 150000; // default for motorbike
+                if (vehicleType == VehicleType.BICYCLE) fee = 50000;
+                else if (vehicleType == VehicleType.CAR) fee = 500000;
+
+                var registration = new ParkingRegistration
+                {
+                    VehicleId = vehicle.Id,
+                    TenantId = finalTenantId,
+                    TicketType = ParkingTicketType.MONTHLY,
+                    StartDate = DateOnly.FromDateTime(DateTime.Today),
+                    FeePerPeriod = fee,
+                    Status = RequestStatus.APPROVED, // auto-approve parking registration when vehicle is registered
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                _context.ParkingRegistrations.Add(registration);
+                await _context.SaveChangesAsync();
+
+                return StatusCode(201, new { success = true, message = "Đăng ký xe & đăng ký gửi xe thành công", data = vehicle });
             }
             catch (Exception ex)
             {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { fetchAPI } from "@/lib/api";
+import { useState, useEffect, useRef } from "react";
+import { fetchAPI, API_URL } from "@/lib/api";
 import { exportToCSV } from "@/lib/export";
-import { AlertCircle, Plus, Edit2, Trash2, X, Search, FileSpreadsheet } from "lucide-react";
+import { AlertCircle, Plus, Edit2, Trash2, X, Search, FileSpreadsheet, Sparkles, UploadCloud } from "lucide-react";
+import OcrScanOverlay from "@/components/ui/OcrScanOverlay";
 
 export default function AdminTenants() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -15,6 +16,50 @@ export default function AdminTenants() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCccdOcr = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setOcrLoading(true);
+      const token = localStorage.getItem("token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch(`${API_URL}/upload/ocr-cccd`, {
+        method: "POST",
+        body: formData,
+        headers
+      });
+
+      if (!response.ok) throw new Error("Không thể xử lý ảnh CCCD");
+
+      const result = await response.json();
+      if (result.success || result.fullName) {
+        setFullName(result.fullName || "");
+        setCccd(result.cccd || "");
+        alert(`AI trích xuất thành công:\n- Họ tên: ${result.fullName}\n- Số CCCD: ${result.cccd}`);
+      } else {
+        alert("Lỗi trích xuất thông tin.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Lỗi OCR: " + err.message);
+    } finally {
+      setOcrLoading(false);
+      // Reset input value so it triggers change even for same file
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (editFileInputRef.current) editFileInputRef.current.value = "";
+    }
+  };
 
   // Form inputs
   const [fullName, setFullName] = useState("");
@@ -334,6 +379,29 @@ export default function AdminTenants() {
             </div>
 
             <div className="space-y-3">
+              {/* OCR CCCD Upload Block */}
+              <div className="bg-linear-to-r from-blue-50 to-indigo-50/50 p-4 rounded-xl border border-blue-100 flex flex-col items-center gap-2 text-center">
+                <Sparkles className="text-blue-600 animate-pulse" size={24} />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">📸 Quét CCCD thông minh bằng AI/OCR</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Tải ảnh mặt trước CCCD để hệ thống tự điền Họ tên và số CCCD</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={(e) => handleCccdOcr(e, false)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-1 bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                >
+                  <UploadCloud size={14} /> Triển khai quét ảnh
+                </button>
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Họ tên sinh viên</label>
                 <input
@@ -431,6 +499,29 @@ export default function AdminTenants() {
             </div>
 
             <div className="space-y-3">
+              {/* OCR CCCD Upload Block for Edit */}
+              <div className="bg-linear-to-r from-blue-50 to-indigo-50/50 p-4 rounded-xl border border-blue-100 flex flex-col items-center gap-2 text-center">
+                <Sparkles className="text-blue-600 animate-pulse" size={24} />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">📸 Quét và cập nhật thông tin CCCD</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Hệ thống tự động thay thế Họ tên và số CCCD hiện tại</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={editFileInputRef}
+                  onChange={(e) => handleCccdOcr(e, true)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => editFileInputRef.current?.click()}
+                  className="mt-1 bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                >
+                  <UploadCloud size={14} /> Thay thế bằng ảnh mới
+                </button>
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Họ tên sinh viên</label>
                 <input
@@ -492,6 +583,9 @@ export default function AdminTenants() {
           </div>
         </div>
       )}
+
+      {/* Render Scan Overlay if OCR is processing */}
+      {ocrLoading && <OcrScanOverlay statusText="AI đang phân tích và quét ảnh CCCD..." />}
     </div>
   );
 }

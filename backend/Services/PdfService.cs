@@ -11,7 +11,7 @@ namespace SmartDorm.Api.Services
         byte[] GenerateContractPdf(Tenant tenant, Room room, RoomRequest request);
         byte[] GenerateTerminationPdf(Tenant tenant, Room room, Contract contract);
         byte[] GenerateRenewalPdf(Tenant tenant, Room room, Contract contract, DateOnly newEndDate);
-        byte[] GenerateInvoicePdf(Invoice invoice, Tenant tenant, Room room, IEnumerable<UtilityUsage> usages);
+        byte[] GenerateInvoicePdf(Invoice invoice, Tenant tenant, Room room, IEnumerable<UtilityUsage> usages, int roommateCount = 1);
     }
 
     public class PdfService : IPdfService
@@ -331,13 +331,14 @@ namespace SmartDorm.Api.Services
             }).GeneratePdf();
         }
 
-        public byte[] GenerateInvoicePdf(Invoice invoice, Tenant tenant, Room room, IEnumerable<UtilityUsage> usages)
+        public byte[] GenerateInvoicePdf(Invoice invoice, Tenant tenant, Room room, IEnumerable<UtilityUsage> usages, int roommateCount = 1)
         {
             var today = DateTime.Today;
             var electricUsage = usages.FirstOrDefault(u => u.Type == UtilityType.ELECTRIC);
             var waterUsage = usages.FirstOrDefault(u => u.Type == UtilityType.WATER);
             int electricConsumed = electricUsage != null ? electricUsage.NewIndex - electricUsage.OldIndex : 0;
             int waterConsumed = waterUsage != null ? waterUsage.NewIndex - waterUsage.OldIndex : 0;
+            decimal garbageFeeShared = roommateCount > 0 ? room.GarbageFee / roommateCount : room.GarbageFee;
 
             return Document.Create(container =>
             {
@@ -357,8 +358,12 @@ namespace SmartDorm.Api.Services
                         column.Item().AlignCenter().Text("Độc lập - Tự do - Hạnh phúc").Bold().FontSize(9f);
                         column.Item().AlignCenter().Width(110).PaddingTop(2).LineHorizontal(0.8f).LineColor(Colors.Black);
 
+                        var isPaid = invoice.Status == InvoiceStatus.PAID;
+                        var titleText = isPaid ? "HÓA ĐƠN ĐÃ THANH TOÁN" : "HÓA ĐƠN TIỀN PHÒNG KHOÁN";
+                        var titleColor = isPaid ? Colors.Green.Darken2 : Colors.Black;
+
                         column.Item().PaddingTop(10).PaddingBottom(3).AlignCenter()
-                            .Text("HÓA ĐƠN TIỀN PHÒNG KHOÁN").Bold().FontSize(13);
+                            .Text(titleText).Bold().FontSize(13).FontColor(titleColor);
                         column.Item().AlignCenter().Text($"Tháng {invoice.BillingMonth}/{invoice.BillingYear}").Bold().FontSize(10f).FontColor(Colors.Blue.Darken2);
                         column.Item().AlignCenter().Text($"Ngày lập: {today.Day}/{today.Month}/{today.Year}").Italic().FontSize(8.5f).FontColor(Colors.Grey.Darken1);
 
@@ -423,11 +428,19 @@ namespace SmartDorm.Api.Services
                             };
 
                             dataRow("Tiền phòng", "—", "—", "1 tháng", $"{invoice.RoomFee:N0} VND", false);
+                            string electricUsageText = roommateCount > 1 
+                                ? $"{electricConsumed} kWh (Chia {roommateCount})" 
+                                : $"{electricConsumed} kWh";
+
+                            string waterUsageText = roommateCount > 1 
+                                ? $"{waterConsumed} m³ (Chia {roommateCount})" 
+                                : $"{waterConsumed} m³";
+
                             dataRow(
                                 "Điện",
                                 electricUsage?.OldIndex.ToString() ?? "0",
                                 electricUsage?.NewIndex.ToString() ?? "0",
-                                $"{electricConsumed} kWh",
+                                electricUsageText,
                                 $"{invoice.ElectricFee:N0} VND",
                                 true
                             );
@@ -435,7 +448,7 @@ namespace SmartDorm.Api.Services
                                 "Nước",
                                 waterUsage?.OldIndex.ToString() ?? "0",
                                 waterUsage?.NewIndex.ToString() ?? "0",
-                                $"{waterConsumed} m³",
+                                waterUsageText,
                                 $"{invoice.WaterFee:N0} VND",
                                 false
                             );
@@ -443,7 +456,10 @@ namespace SmartDorm.Api.Services
                             // Rác
                             if (room.GarbageFee > 0)
                             {
-                                dataRow("Phí rác", "—", "—", "1 tháng", $"{room.GarbageFee:N0} VND", true);
+                                string garbageUsageText = roommateCount > 1 
+                                    ? $"1 tháng (Chia {roommateCount})" 
+                                    : "1 tháng";
+                                dataRow("Phí rác", "—", "—", garbageUsageText, $"{garbageFeeShared:N0} VND", true);
                             }
                         });
 

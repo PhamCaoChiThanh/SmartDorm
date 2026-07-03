@@ -36,6 +36,8 @@ namespace SmartDorm.Api.Controllers
                         action = l.Action,
                         entity = l.EntityName,
                         entityId = l.EntityId != null ? l.EntityId.ToString() : string.Empty,
+                        oldValue = l.OldValue,
+                        newValue = l.NewValue,
                         createdAt = l.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
                     })
                     .ToListAsync();

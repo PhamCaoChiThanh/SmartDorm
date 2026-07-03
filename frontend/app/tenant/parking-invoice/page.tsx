@@ -79,61 +79,48 @@ type Step = "select" | "confirm";
 
 export default function TenantParkingInvoice() {
   const router = useRouter();
-  const [invoices, setInvoices] = useState(parkingInvoices);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [payingId, setPayingId] = useState<number | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("select");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [roomNumber, setRoomNumber] = useState("—");
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await fetchAPI("/tenants/me");
-        if (res.success && res.data && res.data.room) {
-          setRoomNumber(res.data.room.roomNumber || res.data.room.room_number || "—");
-        }
-
-        const vehicleRes = await fetchAPI("/vehicles");
-        let plateNumber = "66FA-19015";
-        let vehicleType = "Xe máy";
-        if (vehicleRes.success && Array.isArray(vehicleRes.data) && vehicleRes.data.length > 0) {
-          const mainVehicle = vehicleRes.data[0];
-          plateNumber = mainVehicle.license_plate || mainVehicle.licensePlate || mainVehicle.LicensePlate || "66FA-19015";
-          const typeUpper = (mainVehicle.type || "").toUpperCase();
-          if (typeUpper === "BICYCLE") vehicleType = "Xe đạp";
-          else if (typeUpper === "CAR") vehicleType = "Ô tô";
-        }
-
-        const localData = localStorage.getItem("parkingInvoices");
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setInvoices(parsed.map((inv: any) => ({
-            ...inv,
-            plate: plateNumber,
-            type: vehicleType
-          })));
-        } else {
-          const initialInvoices = parkingInvoices.map((inv) => ({
-            ...inv,
-            plate: plateNumber,
-            type: vehicleType
-          }));
-          setInvoices(initialInvoices);
-          localStorage.setItem("parkingInvoices", JSON.stringify(initialInvoices));
-        }
-      } catch (err) {
-        console.error("Failed to load room and vehicle info:", err);
+  const loadData = async () => {
+    try {
+      const res = await fetchAPI("/tenants/me");
+      if (res.success && res.data && res.data.room) {
+        setRoomNumber(res.data.room.roomNumber || res.data.room.room_number || "—");
       }
+
+      const invoiceRes = await fetchAPI("/parking/invoices");
+      if (invoiceRes.success && Array.isArray(invoiceRes.data)) {
+        // Map C# properties to React state naming
+        setInvoices(invoiceRes.data.map((inv: any) => ({
+          id: inv.id,
+          plate: inv.plate || "Chưa có",
+          type: inv.type === "MOTORBIKE" ? "Xe máy" : (inv.type === "BICYCLE" ? "Xe đạp" : "Ô tô"),
+          ticketType: inv.ticketType,
+          billingMonth: inv.billingMonth,
+          billingYear: inv.billingYear,
+          amount: inv.amount,
+          status: inv.status
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to load room and parking invoices info:", err);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
   const payingInvoice = invoices.find((inv) => inv.id === payingId);
   const method = paymentMethods.find((m) => m.id === selectedMethod);
 
-  const handleOpenModal = (id: number) => {
+  const handleOpenModal = (id: string) => {
     setPayingId(id);
     setStep("select");
     setSelectedMethod(null);
@@ -147,14 +134,26 @@ export default function TenantParkingInvoice() {
     setSelectedMethod(null);
   };
 
-  const handleConfirmPaid = () => {
-    if (!payingId) return;
-    const updated = invoices.map((inv) =>
-      inv.id === payingId ? { ...inv, status: "PAID" } : inv
-    );
-    setInvoices(updated);
-    localStorage.setItem("parkingInvoices", JSON.stringify(updated));
-    handleClose();
+  const handleConfirmPaid = async () => {
+    if (!payingId || !payingInvoice) return;
+    try {
+      const res = await fetchAPI(`/parking/invoices/${payingId}/pay`, {
+        method: "POST",
+        body: JSON.stringify({
+          paymentMethod: selectedMethod || "BANK",
+          amount: payingInvoice.amount
+        })
+      });
+      if (res.success) {
+        loadData();
+        handleClose();
+      } else {
+        alert(res.message || "Không thể thực hiện thanh toán.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Đã xảy ra lỗi khi thanh toán.");
+    }
   };
 
   const handleCopy = (text: string, key: string) => {
@@ -227,66 +226,72 @@ export default function TenantParkingInvoice() {
       </nav>
 
       <div className="p-4 max-w-lg mx-auto space-y-4 pb-24">
-        {invoices.map((inv) => (
-          <div key={inv.id} className="bg-white rounded-xl shadow-sm p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h2 className="font-semibold text-gray-800">Tháng {inv.billingMonth}/{inv.billingYear}</h2>
-                <p className="text-sm text-gray-400">{inv.plate} · {inv.type}</p>
-                <p className="text-xs text-gray-400">{inv.ticketType === "MONTHLY" ? "Vé tháng" : "Vé ngày"}</p>
-              </div>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                inv.status === "PAID"
-                  ? "bg-green-100 text-green-700"
-                  : inv.status === "WAITING"
-                  ? "bg-blue-100 text-blue-700"
-                  : inv.status === "OVERDUE"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}>
-                {inv.status === "PAID"
-                  ? "Đã thanh toán"
-                  : inv.status === "WAITING"
-                  ? "Chờ duyệt"
-                  : inv.status === "OVERDUE"
-                  ? "Quá hạn"
-                  : "Chờ thanh toán"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-blue-600 text-lg">
-                {inv.amount.toLocaleString("vi-VN")}đ
-              </span>
-              {inv.status === "PENDING" && (
-                <button
-                  onClick={() => handleOpenModal(inv.id)}
-                  className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1"
-                >
-                  <CreditCard size={14} /> Thanh toán
-                </button>
-              )}
-              {inv.status === "WAITING" && (
-                <span className="text-blue-600 text-sm font-medium flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" /> Đang chờ duyệt
-                </span>
-              )}
-              {inv.status === "PAID" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600 text-sm font-medium flex items-center gap-1">
-                    <CheckCircle2 size={16} /> Đã thanh toán
-                  </span>
-                  <button
-                    onClick={() => handleExportReceipt(inv)}
-                    className="text-xs bg-slate-100 border hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1"
-                  >
-                    Xuất hóa đơn
-                  </button>
+        {invoices.length > 0 ? (
+          invoices.map((inv) => (
+            <div key={inv.id} className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h2 className="font-semibold text-gray-800">Tháng {inv.billingMonth}/{inv.billingYear}</h2>
+                  <p className="text-sm text-gray-400">{inv.plate} · {inv.type}</p>
+                  <p className="text-xs text-gray-400">{inv.ticketType === "MONTHLY" ? "Vé tháng" : "Vé ngày"}</p>
                 </div>
-              )}
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  inv.status === "PAID"
+                    ? "bg-green-100 text-green-700"
+                    : inv.status === "WAITING"
+                    ? "bg-blue-100 text-blue-700"
+                    : inv.status === "OVERDUE"
+                    ? "bg-red-100 text-red-600"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}>
+                  {inv.status === "PAID"
+                    ? "Đã thanh toán"
+                    : inv.status === "WAITING"
+                    ? "Chờ duyệt"
+                    : inv.status === "OVERDUE"
+                    ? "Quá hạn"
+                    : "Chờ thanh toán"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-blue-600 text-lg">
+                  {inv.amount.toLocaleString("vi-VN")}đ
+                </span>
+                {inv.status === "PENDING" && (
+                  <button
+                    onClick={() => handleOpenModal(inv.id)}
+                    className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1"
+                  >
+                    <CreditCard size={14} /> Thanh toán
+                  </button>
+                )}
+                {inv.status === "WAITING" && (
+                  <span className="text-blue-600 text-sm font-medium flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" /> Đang chờ duyệt
+                  </span>
+                )}
+                {inv.status === "PAID" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                      <CheckCircle2 size={16} /> Đã thanh toán
+                    </span>
+                    <button
+                      onClick={() => handleExportReceipt(inv)}
+                      className="text-xs bg-slate-100 border hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1"
+                    >
+                      Xuất hóa đơn
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm font-medium">
+            🚗 Bạn hiện chưa có hóa đơn gửi xe nào.
           </div>
-        ))}
+        )}
       </div>
 
       {/* Modal */}

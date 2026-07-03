@@ -44,6 +44,7 @@ namespace SmartDorm.Api.Controllers
                         i.ContractId,
                         room_id = i.Contract != null ? i.Contract.RoomId : null,
                         room_number = i.Contract != null && i.Contract.Room != null ? i.Contract.Room.RoomNumber : string.Empty,
+                        tenant_name = i.Contract != null && i.Contract.Tenant != null ? i.Contract.Tenant.FullName : string.Empty,
                         billing_month = i.BillingMonth,
                         billing_year = i.BillingYear,
                         room_fee = i.RoomFee,
@@ -124,30 +125,79 @@ namespace SmartDorm.Api.Controllers
                     }
                 }
 
+                // Count active roommates (occupants) in the room to share/divide the bill
+                var activeContractsCount = await _context.Contracts
+                    .CountAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE);
+                int divisor = activeContractsCount > 0 ? activeContractsCount : 1;
+
                 // 4. Calculate fees
-                decimal roomFee = room.BasePrice;
-                decimal electricFee = electricUsage * room.ElectricityPrice;
-                decimal waterFee = waterUsage * room.WaterPrice;
-                decimal totalAmount = roomFee + electricFee + waterFee;
+                decimal roomFee = divisor > 1 ? room.BasePrice / divisor : room.BasePrice;
+                decimal electricFee = divisor > 1 ? (electricUsage * room.ElectricityPrice) / divisor : (electricUsage * room.ElectricityPrice);
+                decimal waterFee = divisor > 1 ? (waterUsage * room.WaterPrice) / divisor : (waterUsage * room.WaterPrice);
+                decimal totalAmount = roomFee + electricFee + waterFee + (room.GarbageFee / divisor);
 
-                // 5. Save invoice
-                var invoice = new Invoice
+                // 5. Save invoices for ALL active contracts in the same room
+                var activeContracts = await _context.Contracts
+                    .Where(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE)
+                    .ToListAsync();
+
+                Invoice? targetInvoice = null;
+                foreach (var c in activeContracts)
                 {
-                    ContractId = dto.ContractId,
-                    BillingMonth = dto.BillingMonth,
-                    BillingYear = dto.BillingYear,
-                    RoomFee = roomFee,
-                    ElectricFee = electricFee,
-                    WaterFee = waterFee,
-                    TotalAmount = totalAmount,
-                    PaidAmount = 0,
-                    Status = InvoiceStatus.PENDING
-                };
+                    var invExists = await _context.Invoices.AnyAsync(i =>
+                        i.ContractId == c.Id &&
+                        i.BillingMonth == dto.BillingMonth &&
+                        i.BillingYear == dto.BillingYear);
+                    
+                    if (!invExists)
+                    {
+                        var inv = new Invoice
+                        {
+                            ContractId = c.Id,
+                            BillingMonth = dto.BillingMonth,
+                            BillingYear = dto.BillingYear,
+                            RoomFee = roomFee,
+                            ElectricFee = electricFee,
+                            WaterFee = waterFee,
+                            TotalAmount = totalAmount,
+                            PaidAmount = 0,
+                            Status = InvoiceStatus.PENDING
+                        };
+                        _context.Invoices.Add(inv);
+                        if (c.Id == dto.ContractId)
+                        {
+                            targetInvoice = inv;
+                        }
 
-                _context.Invoices.Add(invoice);
+                        // Auto-generate parking invoice if the tenant has active approved parking registrations
+                        var activeParkingRegistrations = await _context.ParkingRegistrations
+                            .Where(r => r.TenantId == c.TenantId && r.Status == RequestStatus.APPROVED && r.EndDate == null)
+                            .ToListAsync();
+
+                        foreach (var reg in activeParkingRegistrations)
+                        {
+                            var hasParkingInv = await _context.ParkingInvoices
+                                .AnyAsync(pi => pi.RegistrationId == reg.Id && pi.BillingMonth == dto.BillingMonth && pi.BillingYear == dto.BillingYear);
+                            if (!hasParkingInv)
+                            {
+                                var parkingInvoice = new ParkingInvoice
+                                {
+                                    RegistrationId = reg.Id,
+                                    BillingMonth = dto.BillingMonth,
+                                    BillingYear = dto.BillingYear,
+                                    Amount = reg.FeePerPeriod,
+                                    Status = InvoiceStatus.PENDING,
+                                    CreatedAt = DateTimeOffset.UtcNow,
+                                    UpdatedAt = DateTimeOffset.UtcNow
+                                };
+                                _context.ParkingInvoices.Add(parkingInvoice);
+                            }
+                        }
+                    }
+                }
                 await _context.SaveChangesAsync();
 
-                return StatusCode(201, new { success = true, message = "Tạo hóa đơn thành công", data = invoice });
+                return StatusCode(201, new { success = true, message = "Tạo hóa đơn cho các thành viên thành công", data = targetInvoice });
             }
             catch (Exception ex)
             {
@@ -194,6 +244,55 @@ namespace SmartDorm.Api.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                // Send Paid Confirmation Email with Invoice PDF in Background
+                try
+                {
+                    var fullInvoice = await _context.Invoices
+                        .Include(i => i.Contract)
+                            .ThenInclude(c => c!.Tenant)
+                        .Include(i => i.Contract)
+                            .ThenInclude(c => c!.Room)
+                        .FirstOrDefaultAsync(i => i.Id == id);
+
+                    var tenant = fullInvoice?.Contract?.Tenant;
+                    var room = fullInvoice?.Contract?.Room;
+
+                    if (tenant != null && room != null && !string.IsNullOrEmpty(tenant.Email))
+                    {
+                        var usages = await _context.UtilityUsages
+                            .Where(u => u.RoomId == room.Id && u.BillingMonth == fullInvoice.BillingMonth && u.BillingYear == fullInvoice.BillingYear)
+                            .ToListAsync();
+
+                        var roommateCount = await _context.Contracts
+                            .CountAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE);
+                        if (roommateCount <= 0) roommateCount = 1;
+
+                        var pdfBytes = _pdfService.GenerateInvoicePdf(fullInvoice, tenant, room, usages, roommateCount);
+                        var fileName = $"HoaDon_DaThanhToan_Phong{room.RoomNumber}_T{fullInvoice.BillingMonth}_{fullInvoice.BillingYear}.pdf";
+
+                        string subject = $"✅ [SmartDorm] Xác nhận thanh toán hóa đơn tháng {fullInvoice.BillingMonth}/{fullInvoice.BillingYear} - Phòng {room.RoomNumber}";
+                        string body = $"<p>Xin chào <b>{tenant.FullName}</b>,</p>" +
+                                      $"<p>Ban quản lý KTX SmartDorm xác nhận đã nhận được khoản thanh toán cho <b>Hóa đơn tiền phòng</b> tháng <b>{fullInvoice.BillingMonth}/{fullInvoice.BillingYear}</b>.</p>" +
+                                      $"<p>Trạng thái hóa đơn: <b style='color:green'>ĐÃ THANH TOÁN</b></p>" +
+                                      $"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-size:14px;'>" +
+                                      $"<tr style='background:#1e3a5f;color:white'><th>Khoản mục</th><th>Thành tiền</th></tr>" +
+                                      $"<tr><td>Tiền phòng</td><td><b>{fullInvoice.RoomFee:N0} VND</b></td></tr>" +
+                                      $"<tr style='background:#f8f9fa'><td>Điện</td><td><b>{fullInvoice.ElectricFee:N0} VND</b></td></tr>" +
+                                      $"<tr><td>Nước</td><td><b>{fullInvoice.WaterFee:N0} VND</b></td></tr>" +
+                                      $"<tr style='background:#1e3a5f;color:white'><th>TỔNG CỘNG</th><th>{fullInvoice.TotalAmount:N0} VND</th></tr>" +
+                                      $"</table>" +
+                                      $"<p>Cảm ơn bạn đã thực hiện thanh toán đầy đủ. Chi tiết hóa đơn biên lai thanh toán được đính kèm ở file PDF trong email này.</p>";
+
+                        // Send confirmation email
+                        await _emailService.SendEmailAsync(tenant.Email, subject, body, pdfBytes, fileName);
+                    }
+                }
+                catch (Exception mailEx)
+                {
+                    // Log error and continue since transaction committed successfully
+                    Console.WriteLine("Lỗi tự động gửi email hóa đơn: " + mailEx.Message);
+                }
+
                 return Ok(new { success = true, message = "Thanh toán thành công", data = invoice });
             }
             catch (Exception ex)
@@ -230,7 +329,11 @@ namespace SmartDorm.Api.Controllers
                     .Where(u => u.RoomId == room.Id && u.BillingMonth == invoice.BillingMonth && u.BillingYear == invoice.BillingYear)
                     .ToListAsync();
 
-                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages);
+                var roommateCount = await _context.Contracts
+                    .CountAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE);
+                if (roommateCount <= 0) roommateCount = 1;
+
+                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages, roommateCount);
                 var fileName = $"HoaDon_Phong{room.RoomNumber}_T{invoice.BillingMonth}_{invoice.BillingYear}.pdf";
 
                 return File(pdfBytes, "application/pdf", fileName);
@@ -286,7 +389,11 @@ namespace SmartDorm.Api.Controllers
                     .Where(u => u.RoomId == room.Id && u.BillingMonth == invoice.BillingMonth && u.BillingYear == invoice.BillingYear)
                     .ToListAsync();
 
-                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages);
+                var roommateCount = await _context.Contracts
+                    .CountAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE);
+                if (roommateCount <= 0) roommateCount = 1;
+
+                var pdfBytes = _pdfService.GenerateInvoicePdf(invoice, tenant, room, usages, roommateCount);
                 var fileName = $"HoaDon_Phong{room.RoomNumber}_T{invoice.BillingMonth}_{invoice.BillingYear}.pdf";
 
                 foreach (var contract in validContracts)
@@ -335,7 +442,10 @@ namespace SmartDorm.Api.Controllers
         {
             try
             {
-                var invoice = await _context.Invoices.FindAsync(id);
+                var invoice = await _context.Invoices
+                    .Include(i => i.Contract)
+                        .ThenInclude(c => c!.Room)
+                    .FirstOrDefaultAsync(i => i.Id == id);
                 if (invoice == null)
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
@@ -358,7 +468,8 @@ namespace SmartDorm.Api.Controllers
                 invoice.ElectricFee = dto.ElectricFee;
                 invoice.WaterFee = dto.WaterFee;
                 invoice.PaidAmount = dto.PaidAmount;
-                invoice.TotalAmount = (dto.RoomFee ?? 0) + (dto.ElectricFee ?? 0) + (dto.WaterFee ?? 0);
+                decimal garbageFee = invoice.Contract?.Room?.GarbageFee ?? 0;
+                invoice.TotalAmount = (dto.RoomFee ?? 0) + (dto.ElectricFee ?? 0) + (dto.WaterFee ?? 0) + garbageFee;
                 invoice.UpdatedAt = DateTimeOffset.UtcNow;
 
                 await _context.SaveChangesAsync();

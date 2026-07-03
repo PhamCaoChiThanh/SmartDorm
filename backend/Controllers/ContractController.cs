@@ -66,6 +66,7 @@ namespace SmartDorm.Api.Controllers
             public Guid RoomId { get; set; }
             public DateOnly StartDate { get; set; }
             public DateOnly EndDate { get; set; }
+            public decimal DepositAmount { get; set; }
         }
 
         [HttpPost]
@@ -99,10 +100,37 @@ namespace SmartDorm.Api.Controllers
                 };
 
                 _context.Contracts.Add(contract);
+                await _context.SaveChangesAsync(); // save to generate contract.Id
+
+                // 1.5. Create deposit if DepositAmount > 0
+                if (dto.DepositAmount > 0)
+                {
+                    var deposit = new Deposit
+                    {
+                        ContractId = contract.Id,
+                        TotalAmount = dto.DepositAmount,
+                        RemainingBalance = dto.DepositAmount,
+                        Status = "HOLDING",
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    };
+                    _context.Deposits.Add(deposit);
+                    await _context.SaveChangesAsync(); // save to generate deposit.Id
+
+                    var depositTransaction = new DepositTransaction
+                    {
+                        DepositId = deposit.Id,
+                        Amount = dto.DepositAmount,
+                        TransactionType = "RECEIVE",
+                        Reason = "Thu tiền đặt cọc khi bắt đầu hợp đồng",
+                        CreatedAt = DateTimeOffset.UtcNow
+                    };
+                    _context.DepositTransactions.Add(depositTransaction);
+                }
 
                 // 2. Update room status based on capacity
                 var activeContractsCount = await _context.Contracts.CountAsync(c => c.RoomId == dto.RoomId && c.Status == ContractStatus.ACTIVE);
-                if (activeContractsCount + 1 >= room.Capacity)
+                if (activeContractsCount >= room.Capacity)
                 {
                     room.Status = RoomStatus.OCCUPIED;
                 }

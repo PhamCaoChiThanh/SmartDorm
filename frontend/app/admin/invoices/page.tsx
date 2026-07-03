@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { fetchAPI, API_URL } from "@/lib/api";
 import { exportToCSV } from "@/lib/export";
-import { AlertCircle, Send, Plus, Pencil, Trash2, FileSpreadsheet, FileDown } from "lucide-react";
+import { AlertCircle, Send, Plus, Pencil, Trash2, FileSpreadsheet, FileDown, ChevronDown, ChevronRight } from "lucide-react";
 
 const statusLabel: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Chờ thanh toán", cls: "bg-yellow-100 text-yellow-700" },
@@ -18,9 +18,11 @@ export default function AdminInvoices() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendingRoomKey, setSendingRoomKey] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [parkingInvoices, setParkingInvoices] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
  
   // Generate invoice modal
   const [showGenModal, setShowGenModal] = useState(false);
@@ -115,6 +117,41 @@ export default function AdminInvoices() {
       alert("Lỗi khi gửi hóa đơn: " + err.message);
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const handleSendRoomBills = async (roomInvoices: any[], roomKey: string) => {
+    const pendingInvoices = roomInvoices.filter((inv) => inv.status !== "PAID");
+    if (pendingInvoices.length === 0) {
+      alert("Tất cả thành viên trong phòng này đã thanh toán hóa đơn!");
+      return;
+    }
+    
+    try {
+      setSendingRoomKey(roomKey);
+      
+      const promises = pendingInvoices.map((inv) =>
+        fetchAPI(`/invoices/${inv.id}/send`, { method: "POST" })
+      );
+      
+      const results = await Promise.all(promises);
+      const failed = results.filter((res) => !res.success);
+      
+      if (failed.length > 0) {
+        alert(`Gửi bill thành công cho ${results.length - failed.length}/${results.length} người. Có ${failed.length} người gửi lỗi.`);
+      } else {
+        alert("Đã gửi bill thành công đến tất cả các thành viên chưa thanh toán trong phòng!");
+      }
+      
+      pendingInvoices.forEach((inv) => {
+        setSendSuccess(inv.id);
+        setTimeout(() => setSendSuccess(null), 4000);
+      });
+      
+    } catch (err: any) {
+      alert("Lỗi khi gửi hóa đơn phòng: " + err.message);
+    } finally {
+      setSendingRoomKey(null);
     }
   };
 
@@ -372,89 +409,273 @@ export default function AdminInvoices() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? (
-              filtered.map((inv) => {
-                const st = statusLabel[inv.status] || { label: inv.status, cls: "bg-gray-100 text-gray-600" };
-                const isSent = sendSuccess === inv.id;
+            {(() => {
+              // Group invoices by room and month/year
+              const groups: Record<string, {
+                room_number: string;
+                billing_month: number;
+                billing_year: number;
+                room_fee: number;
+                electric_fee: number;
+                water_fee: number;
+                total_amount: number;
+                invoices: any[];
+              }> = {};
+
+              filtered.forEach((inv) => {
+                const key = `${inv.room_number || "—"}_${inv.billing_month}_${inv.billing_year}`;
+                if (!groups[key]) {
+                  groups[key] = {
+                    room_number: inv.room_number || "—",
+                    billing_month: inv.billing_month,
+                    billing_year: inv.billing_year,
+                    room_fee: 0,
+                    electric_fee: 0,
+                    water_fee: 0,
+                    total_amount: 0,
+                    invoices: [],
+                  };
+                }
+                groups[key].room_fee += inv.room_fee || 0;
+                groups[key].electric_fee += inv.electric_fee || 0;
+                groups[key].water_fee += inv.water_fee || 0;
+                groups[key].total_amount += inv.total_amount || 0;
+                groups[key].invoices.push(inv);
+              });
+
+              const groupedList = Object.values(groups);
+
+              if (groupedList.length === 0) {
                 return (
-                  <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {inv.room_number || "—"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 font-medium">
-                      {inv.billing_month}/{inv.billing_year}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">{(inv.room_fee || 0).toLocaleString("vi-VN")}đ</td>
-                    <td className="px-4 py-3 text-right text-yellow-700">{(inv.electric_fee || 0).toLocaleString("vi-VN")}đ</td>
-                    <td className="px-4 py-3 text-right text-blue-700">{(inv.water_fee || 0).toLocaleString("vi-VN")}đ</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-900">{(inv.total_amount || 0).toLocaleString("vi-VN")}đ</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${st.cls}`}>{st.label}</span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs font-normal">
-                      {formatDateTime(inv.sent_at)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs font-normal">
-                      {formatDateTime(inv.payment_date)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2 items-center">
-                        {inv.status !== "PAID" && (
-                          <>
-                            <button
-                              onClick={() => handleOpenEdit(inv)}
-                              title="Sửa hóa đơn"
-                              className="p-1 text-gray-500 hover:text-blue-600 transition"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteInvoice(inv.id)}
-                              title="Xóa hóa đơn"
-                              className="p-1 text-gray-500 hover:text-red-600 transition"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDownloadPdf(inv.id, inv.room_number, inv.billing_month, inv.billing_year)}
-                              title="Xuất PDF hóa đơn"
-                              className="p-1 text-gray-500 hover:text-emerald-600 transition mr-2"
-                            >
-                              <FileDown size={14} />
-                            </button>
-                          </>
-                        )}
-                        {inv.status === "PAID" ? (
-                          <span className="text-green-600 text-xs font-semibold flex items-center gap-1">
-                            ✅ Đã thanh toán
-                          </span>
-                        ) : isSent ? (
-                          <span className="text-green-600 text-xs font-semibold">✅ Đã gửi!</span>
-                        ) : (
-                          <button
-                            onClick={() => handleSendBill(inv.id)}
-                            disabled={sendingId === inv.id}
-                            title="Gửi hóa đơn qua email"
-                            className="flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-lg text-xs font-semibold transition disabled:opacity-50"
-                          >
-                            <Send size={12} />
-                            {sendingId === inv.id ? "Đang gửi..." : "Gửi Bill"}
-                          </button>
-                        )}
-                      </div>
+                  <tr>
+                    <td colSpan={10} className="text-center py-10 text-gray-400">
+                      Không có hóa đơn nào.
                     </td>
                   </tr>
                 );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-400">
-                  Không có hóa đơn nào.
-                </td>
-              </tr>
-            )}
+              }
+
+              return groupedList.map((group) => {
+                const groupKey = `${group.room_number}_${group.billing_month}_${group.billing_year}`;
+                const isExpanded = !!expandedGroups[groupKey];
+                const paidCount = group.invoices.filter((i: any) => i.status === "PAID").length;
+                const totalCount = group.invoices.length;
+
+                let groupStatusLabel = `Chờ thanh toán (0/${totalCount})`;
+                let groupStatusCls = "bg-yellow-100 text-yellow-700";
+
+                if (paidCount === totalCount) {
+                  groupStatusLabel = `Đã thanh toán (${totalCount}/${totalCount})`;
+                  groupStatusCls = "bg-green-100 text-green-700";
+                } else if (paidCount > 0) {
+                  groupStatusLabel = `Đã TT một phần (${paidCount}/${totalCount})`;
+                  groupStatusCls = "bg-blue-100 text-blue-700";
+                }
+
+                const toggleExpand = () => {
+                  setExpandedGroups((prev) => ({
+                    ...prev,
+                    [groupKey]: !prev[groupKey],
+                  }));
+                };
+
+                return (
+                  <>
+                    {/* Main Row */}
+                    <tr
+                      key={groupKey}
+                      onClick={toggleExpand}
+                      className="border-b hover:bg-gray-50/80 cursor-pointer transition select-none"
+                    >
+                      <td className="px-4 py-3 font-semibold text-gray-800">
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronDown size={16} className="text-gray-400" />
+                          ) : (
+                            <ChevronRight size={16} className="text-gray-400" />
+                          )}
+                          <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                            {group.room_number}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 font-medium">
+                        {group.billing_month}/{group.billing_year}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-medium">
+                        {group.room_fee.toLocaleString("vi-VN")}đ
+                      </td>
+                      <td className="px-4 py-3 text-right text-yellow-700 font-medium">
+                        {group.electric_fee.toLocaleString("vi-VN")}đ
+                      </td>
+                      <td className="px-4 py-3 text-right text-blue-700 font-medium">
+                        {group.water_fee.toLocaleString("vi-VN")}đ
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-900">
+                        {group.total_amount.toLocaleString("vi-VN")}đ
+                      </td>
+                      <td className="px-4 py-3" colSpan={4}>
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${groupStatusCls}`}>
+                            {groupStatusLabel}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            {paidCount < totalCount && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSendRoomBills(group.invoices, groupKey);
+                                }}
+                                disabled={sendingRoomKey === groupKey}
+                                className="flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1 rounded-xl text-xs font-semibold transition disabled:opacity-50"
+                              >
+                                <Send size={12} />
+                                {sendingRoomKey === groupKey ? "Đang gửi..." : "Gửi Bill"}
+                              </button>
+                            )}
+                            <span className="text-xs text-blue-600 font-semibold hover:underline">
+                              {isExpanded ? "Thu gọn" : "Xem chi tiết"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Sub Rows (Expanded) */}
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={10} className="bg-gray-50/40 p-0 border-b">
+                          <div className="px-4 py-3 border-l-4 border-blue-500 bg-gray-50/70">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                              Chi tiết hóa đơn từng thành viên phòng {group.room_number}
+                            </h4>
+                            <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xs">
+                              <table className="w-full text-xs">
+                                <thead className="bg-gray-50/50 text-gray-500 border-b">
+                                  <tr>
+                                    <th className="text-left px-3 py-2 font-semibold">Tên khách thuê</th>
+                                    <th className="text-right px-3 py-2 font-semibold">Tiền phòng</th>
+                                    <th className="text-right px-3 py-2 font-semibold">Tiền điện</th>
+                                    <th className="text-right px-3 py-2 font-semibold">Tiền nước</th>
+                                    <th className="text-right px-3 py-2 font-semibold">Tổng cộng</th>
+                                    <th className="text-left px-3 py-2 font-semibold">Trạng thái</th>
+                                    <th className="text-left px-3 py-2 font-semibold">Gửi lúc</th>
+                                    <th className="text-left px-3 py-2 font-semibold">Thanh toán lúc</th>
+                                    <th className="text-right px-3 py-2 font-semibold">Thao tác</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {group.invoices.map((inv: any) => {
+                                    const st = statusLabel[inv.status] || {
+                                      label: inv.status,
+                                      cls: "bg-gray-100 text-gray-600",
+                                    };
+                                    const isSent = sendSuccess === inv.id;
+                                    return (
+                                      <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50/30">
+                                        <td className="px-3 py-2.5 font-semibold text-gray-700">
+                                          {inv.tenant_name || "—"}
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right text-gray-600">
+                                          {(inv.room_fee || 0).toLocaleString("vi-VN")}đ
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right text-yellow-700">
+                                          {(inv.electric_fee || 0).toLocaleString("vi-VN")}đ
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right text-blue-700">
+                                          {(inv.water_fee || 0).toLocaleString("vi-VN")}đ
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right font-bold text-gray-900">
+                                          {(inv.total_amount || 0).toLocaleString("vi-VN")}đ
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${st.cls}`}>
+                                            {st.label}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2.5 text-gray-400 font-normal">
+                                          {formatDateTime(inv.sent_at)}
+                                        </td>
+                                        <td className="px-3 py-2.5 text-gray-400 font-normal">
+                                          {formatDateTime(inv.payment_date)}
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                          <div className="flex justify-end gap-1.5 items-center">
+                                            {inv.status !== "PAID" && (
+                                              <>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEdit(inv);
+                                                  }}
+                                                  title="Sửa hóa đơn"
+                                                  className="p-1 text-gray-400 hover:text-blue-600 transition"
+                                                >
+                                                  <Pencil size={12} />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteInvoice(inv.id);
+                                                  }}
+                                                  title="Xóa hóa đơn"
+                                                  className="p-1 text-gray-400 hover:text-red-600 transition"
+                                                >
+                                                  <Trash2 size={12} />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDownloadPdf(
+                                                      inv.id,
+                                                      inv.room_number,
+                                                      inv.billing_month,
+                                                      inv.billing_year
+                                                    );
+                                                  }}
+                                                  title="Xuất PDF hóa đơn"
+                                                  className="p-1 text-gray-400 hover:text-emerald-600 transition"
+                                                >
+                                                  <FileDown size={12} />
+                                                </button>
+                                              </>
+                                            )}
+                                            {inv.status === "PAID" ? (
+                                              <span className="text-green-600 text-[11px] font-semibold flex items-center gap-0.5">
+                                                ✅ Đã thanh toán
+                                              </span>
+                                            ) : isSent ? (
+                                              <span className="text-green-600 text-[11px] font-semibold">✅ Đã gửi!</span>
+                                            ) : (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleSendBill(inv.id);
+                                                }}
+                                                disabled={sendingId === inv.id}
+                                                title="Gửi hóa đơn qua email"
+                                                className="flex items-center gap-0.5 bg-indigo-600 text-white hover:bg-indigo-700 px-2 py-0.5 rounded text-[10px] font-semibold transition disabled:opacity-50"
+                                              >
+                                                <Send size={10} />
+                                                {sendingId === inv.id ? "Đang gửi..." : "Gửi Bill"}
+                                              </button>
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>

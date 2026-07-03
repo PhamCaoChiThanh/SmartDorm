@@ -488,4 +488,135 @@ namespace SmartDorm.Api.Models
         [Column("created_at")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
+
+    public enum ParkingTicketType
+    {
+        MONTHLY,
+        DAILY
+    }
+
+    [Table("parking_registrations")]
+    public class ParkingRegistration
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("vehicle_id")]
+        public Guid? VehicleId { get; set; }
+
+        [ForeignKey(nameof(VehicleId))]
+        public Vehicle? Vehicle { get; set; }
+
+        [Column("tenant_id")]
+        public Guid? TenantId { get; set; }
+
+        [ForeignKey(nameof(TenantId))]
+        public Tenant? Tenant { get; set; }
+
+        [Column("ticket_type")]
+        public ParkingTicketType TicketType { get; set; } = ParkingTicketType.MONTHLY;
+
+        [Column("start_date")]
+        public DateOnly StartDate { get; set; }
+
+        [Column("end_date")]
+        public DateOnly? EndDate { get; set; }
+
+        [Column("fee_per_period")]
+        public decimal FeePerPeriod { get; set; }
+
+        [Column("status")]
+        public RequestStatus Status { get; set; } = RequestStatus.PENDING;
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("parking_invoices")]
+    public class ParkingInvoice
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("registration_id")]
+        public Guid? RegistrationId { get; set; }
+
+        [ForeignKey(nameof(RegistrationId))]
+        public ParkingRegistration? Registration { get; set; }
+
+        [Column("billing_month")]
+        public int? BillingMonth { get; set; }
+
+        [Column("billing_year")]
+        public int? BillingYear { get; set; }
+
+        [Column("amount")]
+        public decimal Amount { get; set; }
+
+        [Column("status")]
+        public InvoiceStatus Status { get; set; } = InvoiceStatus.PENDING;
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [Column("updated_at")]
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("parking_payments")]
+    public class ParkingPayment
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("parking_invoice_id")]
+        public Guid? ParkingInvoiceId { get; set; }
+
+        [ForeignKey(nameof(ParkingInvoiceId))]
+        public ParkingInvoice? ParkingInvoice { get; set; }
+
+        [Column("amount")]
+        public decimal Amount { get; set; }
+
+        [Column("payment_method")]
+        [MaxLength(50)]
+        public string? PaymentMethod { get; set; }
+
+        [Column("payment_date")]
+        public DateTimeOffset PaymentDate { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    [Table("deposit_transactions")]
+    public class DepositTransaction
+    {
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Column("deposit_id")]
+        public Guid? DepositId { get; set; }
+
+        [ForeignKey(nameof(DepositId))]
+        public Deposit? Deposit { get; set; }
+
+        [Column("amount")]
+        public decimal Amount { get; set; }
+
+        [Column("transaction_type")]
+        [MaxLength(50)]
+        public string? TransactionType { get; set; }
+
+        [Column("reason")]
+        public string? Reason { get; set; }
+
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    }
 }
+

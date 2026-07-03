@@ -130,6 +130,26 @@ namespace SmartDorm.Api.Controllers
                 if (exists)
                     return BadRequest(new { success = false, message = "Bạn đã có yêu cầu đang chờ duyệt cho phòng này." });
 
+                // Check if tenant has any unpaid room invoices
+                var unpaidRoomInvoice = await _context.Invoices
+                    .Include(i => i.Contract)
+                    .AnyAsync(i => i.Contract != null && i.Contract.TenantId == tenant.Id && 
+                                  (i.Status == InvoiceStatus.PENDING || i.Status == InvoiceStatus.OVERDUE));
+                if (unpaidRoomInvoice)
+                {
+                    return BadRequest(new { success = false, message = "Bạn còn hóa đơn phòng chưa thanh toán. Vui lòng thanh toán hóa đơn cũ trước khi đăng ký phòng mới." });
+                }
+
+                // Check if tenant has any unpaid parking invoices
+                var unpaidParkingInvoice = await _context.ParkingInvoices
+                    .Include(i => i.Registration)
+                    .AnyAsync(i => i.Registration != null && i.Registration.TenantId == tenant.Id && 
+                                  (i.Status == InvoiceStatus.PENDING || i.Status == InvoiceStatus.OVERDUE));
+                if (unpaidParkingInvoice)
+                {
+                    return BadRequest(new { success = false, message = "Bạn còn hóa đơn gửi xe chưa thanh toán. Vui lòng thanh toán hóa đơn cũ trước khi đăng ký phòng mới." });
+                }
+
                 DateOnly? moveInDate = null;
                 if (!string.IsNullOrEmpty(dto.MoveInDate) && DateOnly.TryParse(dto.MoveInDate, out var parsedDate))
                     moveInDate = parsedDate;
@@ -235,10 +255,34 @@ namespace SmartDorm.Api.Controllers
                         Status = ContractStatus.ACTIVE
                     };
                     _context.Contracts.Add(contract);
+                    await _context.SaveChangesAsync(); // generate contract ID
+
+                    // Create Deposit matching room price
+                    var deposit = new Deposit
+                    {
+                        ContractId = contract.Id,
+                        TotalAmount = room.BasePrice,
+                        RemainingBalance = room.BasePrice,
+                        Status = "HOLDING",
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow
+                    };
+                    _context.Deposits.Add(deposit);
+                    await _context.SaveChangesAsync(); // generate deposit ID
+
+                    var depositTransaction = new DepositTransaction
+                    {
+                        DepositId = deposit.Id,
+                        Amount = room.BasePrice,
+                        TransactionType = "RECEIVE",
+                        Reason = "Thu tiền đặt cọc khi bắt đầu hợp đồng (Duyệt yêu cầu thuê)",
+                        CreatedAt = DateTimeOffset.UtcNow
+                    };
+                    _context.DepositTransactions.Add(depositTransaction);
 
                     // Update room status based on capacity
                     var activeContractsCount = await _context.Contracts.CountAsync(c => c.RoomId == request.RoomId && c.Status == ContractStatus.ACTIVE);
-                    if (activeContractsCount + 1 >= room.Capacity)
+                    if (activeContractsCount >= room.Capacity)
                     {
                         room.Status = RoomStatus.OCCUPIED;
                     }
@@ -442,6 +486,52 @@ namespace SmartDorm.Api.Controllers
                         }
 
                         _ = Task.Run(() => _emailService.SendEmailAsync(tenant.Email!, subject, body, pdfBytes, pdfName));
+
+                        if (requestStatus == RequestStatus.APPROVED && room != null)
+                        {
+                            try
+                            {
+                                // Notify existing roommates
+                                var existingRoommates = await _context.Contracts
+                                    .Include(c => c.Tenant)
+                                    .Where(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE && c.TenantId != tenant.Id)
+                                    .Select(c => c.Tenant)
+                                    .Where(t => t != null && !string.IsNullOrEmpty(t.Email))
+                                    .ToListAsync();
+
+                                foreach (var roommate in existingRoommates)
+                                {
+                                    string roommateSubject = $"🔔 [SmartDorm] Phòng {room.RoomNumber} có thành viên mới!";
+                                    string roommateBody = $"<p>Xin chào,</p>" +
+                                                           $"<p>Ban quản lý KTX SmartDorm thông báo phòng <b>{room.RoomNumber}</b> của bạn vừa có thành viên mới được xét duyệt dọn vào ở:</p>" +
+                                                           $"<div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; font-size: 14px; color: #1e293b;'>" +
+                                                           $"  • <b>Họ tên thành viên mới:</b> {tenant.FullName}<br/>" +
+                                                           $"  • <b>Số điện thoại:</b> {tenant.Phone ?? "N/A"}<br/>" +
+                                                           $"  • <b>Email liên hệ:</b> {tenant.Email ?? "N/A"}" +
+                                                           $"</div>" +
+                                                           $"<p>Hãy cùng kết nối và chào đón thành viên mới của phòng nhé! Chúc các bạn có một môi trường sinh hoạt vui vẻ và hòa đồng.</p>";
+                                    _ = Task.Run(() => _emailService.SendEmailAsync(roommate!.Email!, roommateSubject, roommateBody));
+                                }
+                            }
+                            catch (Exception roommateErr)
+                            {
+                                Console.WriteLine("Lỗi gửi mail thông báo roommates: " + roommateErr.Message);
+                            }
+
+                            try
+                            {
+                                // Notify Admin
+                                string adminSubject = $"📢 [SmartDorm] Thông báo duyệt thành viên mới - Phòng {room.RoomNumber}";
+                                string adminBody = $"<p>Kính gửi Ban quản lý,</p>" +
+                                                   $"<p>Hệ thống ghi nhận yêu cầu thuê phòng <b>{room.RoomNumber}</b> của sinh viên <b>{tenant.FullName}</b> (CCCD: {tenant.Cccd}) đã được phê duyệt thành công.</p>" +
+                                                   $"<p>Hợp đồng thuê phòng mới đã được tự động khởi tạo trên hệ thống.</p>";
+                                _ = Task.Run(() => _emailService.SendEmailAsync("manager@smartdorm.com", adminSubject, adminBody));
+                            }
+                            catch (Exception adminErr)
+                            {
+                                Console.WriteLine("Lỗi gửi mail thông báo admin: " + adminErr.Message);
+                            }
+                        }
                     }
                 }
 
