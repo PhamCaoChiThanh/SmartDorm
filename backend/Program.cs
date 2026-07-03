@@ -97,6 +97,7 @@ builder.Services.AddAuthentication(options =>
 var app = builder.Build();
 
 app.UseCors("AllowAll");
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

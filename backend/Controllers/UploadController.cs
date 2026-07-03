@@ -71,6 +71,8 @@ namespace SmartDorm.Api.Controllers
         }
 
         [HttpPost]
+        [DisableRequestSizeLimit]
+        [RequestFormLimits(MultipartBodyLengthLimit = 209715200)] // 200MB limit
         public async Task<IActionResult> UploadFile(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -78,53 +80,36 @@ namespace SmartDorm.Api.Controllers
                 return BadRequest("Không có file nào được tải lên.");
             }
 
-            var bucketName = _configuration["AWS:BucketName"] ?? "smartdorm-s3-bucket";
-            var region = _configuration["AWS:Region"] ?? "ap-southeast-1";
-
-            // Tạo tên file độc nhất để tránh trùng lặp
-            var fileExtension = Path.GetExtension(file.FileName);
-            var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-            var key = $"uploads/{uniqueFileName}";
-
             try
             {
-                using (var newStream = new MemoryStream())
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(uploadsFolder))
                 {
-                    await file.CopyToAsync(newStream);
-                    newStream.Position = 0;
-
-                    var putRequest = new PutObjectRequest
-                    {
-                        BucketName = bucketName,
-                        Key = key,
-                        InputStream = newStream,
-                        ContentType = file.ContentType
-                    };
-
-                    // Thiết lập quyền đọc công khai cho file trên S3
-                    // Lưu ý: AWS S3 Bucket cần được tắt cấu hình "Block Public Access" và cho phép ACL để hoạt động
-                    putRequest.CannedACL = S3CannedACL.PublicRead;
-
-                    await _s3Client.PutObjectAsync(putRequest);
+                    Directory.CreateDirectory(uploadsFolder);
                 }
 
-                // Đường dẫn URL công khai của file sau khi upload thành công
-                var fileUrl = $"https://{bucketName}.s3.{region}.amazonaws.com/{key}";
+                var fileExtension = Path.GetExtension(file.FileName);
+                var uniqueFileName = `${Guid.NewGuid()}${fileExtension}`;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var request = HttpContext.Request;
+                var fileUrl = `${request.Scheme}://${request.Host}/uploads/${uniqueFileName}`;
 
                 return Ok(new
                 {
                     Url = fileUrl,
-                    Key = key,
+                    Key = `uploads/${uniqueFileName}`,
                     FileName = file.FileName
                 });
             }
-            catch (AmazonS3Exception amazonS3Exception)
-            {
-                return StatusCode(500, $"Lỗi AWS S3: {amazonS3Exception.Message}");
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi hệ thống khi tải file lên: {ex.Message}");
+                return StatusCode(500, `Lỗi hệ thống khi tải file lên: ${ex.Message}`);
             }
         }
     }
