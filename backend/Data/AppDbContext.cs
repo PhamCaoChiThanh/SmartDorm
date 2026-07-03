@@ -35,6 +35,11 @@ namespace SmartDorm.Api.Data
         public DbSet<ParkingInvoice> ParkingInvoices { get; set; } = null!;
         public DbSet<ParkingPayment> ParkingPayments { get; set; } = null!;
         public DbSet<DepositTransaction> DepositTransactions { get; set; } = null!;
+        public DbSet<Post> Posts { get; set; } = null!;
+        public DbSet<PostLike> PostLikes { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
+        public DbSet<CommentLike> CommentLikes { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

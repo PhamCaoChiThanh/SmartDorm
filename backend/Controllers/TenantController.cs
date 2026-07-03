@@ -175,7 +175,7 @@ namespace SmartDorm.Api.Controllers
             }
         }
 
-        [Authorize(Roles = "TENANT")]
+        [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -188,7 +188,9 @@ namespace SmartDorm.Api.Controllers
                 }
 
                 var userId = Guid.Parse(userIdClaim.Value);
-                var tenant = await _context.Tenants.FirstOrDefaultAsync(t => t.UserId == userId);
+                var tenant = await _context.Tenants
+                    .Include(t => t.User)
+                    .FirstOrDefaultAsync(t => t.UserId == userId);
 
                 if (tenant == null)
                 {
@@ -208,6 +210,7 @@ namespace SmartDorm.Api.Controllers
                             cccd = "",
                             phone = "",
                             email = user.Email,
+                            avatar_url = user.AvatarUrl,
                             room = (object?)null,
                             contract = (object?)null,
                             invoices = new List<object>(),
@@ -257,6 +260,7 @@ namespace SmartDorm.Api.Controllers
                         cccd = tenant.Cccd,
                         phone = tenant.Phone,
                         email = tenant.Email,
+                        avatar_url = tenant.User?.AvatarUrl,
                         room = contract?.Room != null ? new
                         {
                             id = contract.Room.Id,
@@ -310,9 +314,10 @@ namespace SmartDorm.Api.Controllers
             public string Cccd { get; set; } = string.Empty;
             public string? Phone { get; set; }
             public string? Email { get; set; }
+            public string? AvatarUrl { get; set; }
         }
 
-        [Authorize(Roles = "TENANT")]
+        [Authorize]
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateTenantProfileDto dto)
         {
@@ -370,6 +375,7 @@ namespace SmartDorm.Api.Controllers
                 if (user != null)
                 {
                     user.Email = dto.Email;
+                    user.AvatarUrl = dto.AvatarUrl;
                     user.UpdatedAt = DateTimeOffset.UtcNow;
                     _context.Users.Update(user);
                 }

@@ -362,4 +362,66 @@ CREATE INDEX idx_parking_invoice_reg
 ON parking_invoices(registration_id);
 
 CREATE INDEX idx_parking_payment_invoice
-ON parking_payments(parking_invoice_id);
+ON parking_payments(parking_invoice_id);
+
+--------------------------------------------------
+-- POSTS (NEWS FEED)
+--------------------------------------------------
+
+CREATE TABLE posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    likes_count INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE post_likes (
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, user_id)
+);
+
+CREATE TABLE comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    likes_count INT DEFAULT 0,
+    image_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE comment_likes (
+    comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (comment_id, user_id)
+);
+
+CREATE INDEX idx_posts_user ON posts(user_id);
+CREATE INDEX idx_comments_post ON comments(post_id);
+CREATE INDEX idx_comments_user ON comments(user_id);
+CREATE INDEX idx_comments_parent ON comments(parent_id);
+
+--------------------------------------------------
+-- NOTIFICATIONS
+--------------------------------------------------
+
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL, -- 'LIKE_POST', 'COMMENT_POST', 'REPLY_COMMENT'
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX idx_notifications_created ON notifications(created_at);
+

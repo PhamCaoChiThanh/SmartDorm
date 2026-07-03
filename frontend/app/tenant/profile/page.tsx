@@ -337,8 +337,8 @@ export default function TenantProfilePage() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Giá phòng cơ bản</span>
-                  <span className="font-bold text-gray-900">
+                  <span className="text-gray-500 dark:text-zinc-400">Giá phòng cơ bản</span>
+                  <span className="font-bold text-gray-900 dark:text-zinc-550">
                     {profile.room.basePrice.toLocaleString("vi-VN")} đ/người/tháng
                   </span>
                 </div>
