@@ -89,6 +89,15 @@ namespace SmartDorm.Api.Data
             modelBuilder.Entity<ParkingInvoice>()
                 .Property(e => e.Status)
                 .HasConversion<string>();
+        
+
+            // Configure composite key for PostLike
+            modelBuilder.Entity<PostLike>()
+                .HasKey(pl => new { pl.PostId, pl.UserId });
+
+            // Configure composite key for CommentLike
+            modelBuilder.Entity<CommentLike>()
+                .HasKey(cl => new { cl.CommentId, cl.UserId });
         }
 
         public override int SaveChanges()
