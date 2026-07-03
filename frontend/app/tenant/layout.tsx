@@ -33,7 +33,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           <ThemeToggle />
           <NotificationBell />
           <button
-            onClick={() => { localStorage.clear(); router.push("/"); }}
+            onClick={() => { sessionStorage.clear(); router.push("/"); }}
             className="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 flex items-center gap-1 font-semibold transition-colors"
           >
             <LogOut size={14} />

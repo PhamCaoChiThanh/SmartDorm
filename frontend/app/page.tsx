@@ -86,10 +86,10 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"home" | "rooms">("home");
 
   useEffect(() => {
-    const name = localStorage.getItem("currentName");
+    const name = sessionStorage.getItem("currentName");
     if (name) setCurrentName(name);
 
-    const role = localStorage.getItem("currentRole");
+    const role = sessionStorage.getItem("currentRole");
     if (role) {
       setCurrentRole(role);
       if (role === "ADMIN" || role === "MANAGER") {
@@ -100,7 +100,7 @@ export default function HomePage() {
       }
     }
 
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     const loadRooms = async () => {
       try {
@@ -144,11 +144,11 @@ export default function HomePage() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("currentEmail");
-    localStorage.removeItem("currentName");
-    localStorage.removeItem("currentRole");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("currentEmail");
+    sessionStorage.removeItem("currentName");
+    sessionStorage.removeItem("currentRole");
     setCurrentName(null);
     setCurrentRole(null);
   };
@@ -600,7 +600,7 @@ export default function HomePage() {
                               </button>
                               <button
                                 onClick={() => {
-                                  const role = localStorage.getItem("currentRole");
+                                  const role = sessionStorage.getItem("currentRole");
                                   if (!role) router.push("/login");
                                   else router.push(`/rooms/${room.id}?action=register`);
                                 }}

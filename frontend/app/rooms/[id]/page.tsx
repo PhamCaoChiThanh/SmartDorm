@@ -138,9 +138,9 @@ export default function RoomDetailPage() {
 
     fetchRoomData();
 
-    const name = localStorage.getItem("currentName");
+    const name = sessionStorage.getItem("currentName");
     if (name) setCurrentName(name);
-    const role = localStorage.getItem("currentRole");
+    const role = sessionStorage.getItem("currentRole");
     if (role) {
       setCurrentRole(role);
       setIsLoggedIn(true);
@@ -309,11 +309,11 @@ export default function RoomDetailPage() {
                   </button>
                 )}
                 <button onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user");
-                  localStorage.removeItem("currentEmail");
-                  localStorage.removeItem("currentName");
-                  localStorage.removeItem("currentRole");
+                  sessionStorage.removeItem("token");
+                  sessionStorage.removeItem("user");
+                  sessionStorage.removeItem("currentEmail");
+                  sessionStorage.removeItem("currentName");
+                  sessionStorage.removeItem("currentRole");
                   setCurrentName(null);
                   setCurrentRole(null);
                   setIsLoggedIn(false);

@@ -157,7 +157,7 @@ export default function AdminInvoices() {
 
   const handleDownloadPdf = async (id: string, roomNumber: string, month: number, year: number) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(`${API_URL}/invoices/${id}/pdf`, { headers });

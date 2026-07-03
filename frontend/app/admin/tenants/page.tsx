@@ -30,7 +30,7 @@ export default function AdminTenants() {
 
     try {
       setOcrLoading(true);
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 

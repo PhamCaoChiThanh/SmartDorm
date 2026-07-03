@@ -59,7 +59,7 @@ export default function OwnerCreate() {
     : ["https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop"],
   publish: form.publish,
       createdAt: new Date().toISOString(),
-       ownerEmail: localStorage.getItem("currentEmail") || "",
+       ownerEmail: sessionStorage.getItem("currentEmail") || "",
     };
 
     // Lưu vào localStorage

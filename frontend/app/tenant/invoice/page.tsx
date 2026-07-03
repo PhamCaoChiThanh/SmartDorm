@@ -246,7 +246,7 @@ export default function TenantInvoice() {
 
     try {
       setOcrLoading(true);
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -274,7 +274,7 @@ export default function TenantInvoice() {
           
           // Automatically download PDF invoice
           try {
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
             const headers: any = {};
             if (token) headers["Authorization"] = `Bearer ${token}`;
             const pdfResponse = await fetch(`${API_URL}/invoices/${invoice.id}/pdf`, { headers });
@@ -313,7 +313,7 @@ export default function TenantInvoice() {
   const handleDownloadPdfManual = async () => {
     if (!invoice) return;
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const pdfResponse = await fetch(`${API_URL}/invoices/${invoice.id}/pdf`, { headers });

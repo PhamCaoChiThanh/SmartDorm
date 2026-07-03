@@ -26,7 +26,7 @@ export default function OwnerAppointments() {
   const [currentEmail, setCurrentEmail] = useState("");
 
   useEffect(() => {
-    const email = localStorage.getItem("currentEmail") || "";
+    const email = sessionStorage.getItem("currentEmail") || "";
     setCurrentEmail(email);
 
     const all: Appointment[] = JSON.parse(localStorage.getItem("ownerAppointments") || "[]");

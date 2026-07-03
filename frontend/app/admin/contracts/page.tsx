@@ -94,7 +94,7 @@ export default function AdminContracts() {
 
   const handleDownloadPdf = async (id: string, roomNumber: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(`${API_URL}/contracts/${id}/pdf`, { headers });
@@ -115,7 +115,7 @@ export default function AdminContracts() {
 
   const handleDownloadTerminationPdf = async (id: string, roomNumber: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(`${API_URL}/contracts/${id}/pdf/termination`, { headers });
@@ -136,7 +136,7 @@ export default function AdminContracts() {
 
   const handleDownloadRenewalPdf = async (id: string, roomNumber: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const headers: any = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(`${API_URL}/contracts/${id}/pdf/renewal`, { headers });

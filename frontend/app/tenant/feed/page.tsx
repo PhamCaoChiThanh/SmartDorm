@@ -114,7 +114,7 @@ export default function TenantFeed() {
   const [currentUser] = useState<CurrentUser | null>(() => {
     if (typeof window === "undefined") return null;
     try {
-      const saved = localStorage.getItem("user");
+      const saved = sessionStorage.getItem("user");
       return saved ? (JSON.parse(saved) as CurrentUser) : null;
     } catch {
       return null;

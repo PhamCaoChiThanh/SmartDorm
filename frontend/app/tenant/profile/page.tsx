@@ -44,7 +44,7 @@ export default function TenantProfilePage() {
       const formDataUpload = new FormData();
       formDataUpload.append("file", file);
 
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const uploadRes = await fetch(`${API_URL}/upload`, {
         method: "POST",
         headers: {
@@ -101,7 +101,7 @@ export default function TenantProfilePage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;
@@ -126,7 +126,7 @@ export default function TenantProfilePage() {
     } catch (err: any) {
       console.error("Error loading profile:", err);
       if (err.message && (err.message.includes("401") || err.message.toLowerCase().includes("unauthorized"))) {
-        localStorage.clear();
+        sessionStorage.clear();
         router.push("/login");
         return;
       }
@@ -180,8 +180,8 @@ export default function TenantProfilePage() {
         }));
         setEditMode(false);
         // Cập nhật lại thông tin lưu ở localStorage
-        localStorage.setItem("currentName", formData.fullName);
-        localStorage.setItem("currentEmail", formData.email);
+        sessionStorage.setItem("currentName", formData.fullName);
+        sessionStorage.setItem("currentEmail", formData.email);
       }
     } catch (err: any) {
       console.error("Error updating profile:", err);

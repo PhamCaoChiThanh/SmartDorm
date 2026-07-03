@@ -129,7 +129,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         {/* Footer */}
         <div className="px-5 py-4 border-t border-gray-100 dark:border-zinc-800">
           <button
-            onClick={() => { localStorage.clear(); router.push("/"); }}
+            onClick={() => { sessionStorage.clear(); router.push("/"); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl transition"
           >
             <LogOut size={16} />
