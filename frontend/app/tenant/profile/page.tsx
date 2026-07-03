@@ -18,8 +18,11 @@ import {
   X,
   TrendingUp,
   Activity,
-  DollarSign
+  DollarSign,
+  Camera,
 } from "lucide-react";
+import { useRef } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function TenantProfilePage() {
   const router = useRouter();
@@ -27,11 +30,73 @@ export default function TenantProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingAvatar(true);
+      setMessage(null);
+
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const uploadRes = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formDataUpload
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Không thể tải ảnh lên server.");
+      }
+
+      const uploadData = await uploadRes.json();
+      const newAvatarUrl = uploadData.url;
+
+      const updateData = {
+        fullName: formData.fullName || profile.fullName,
+        phone: formData.phone || profile.phone,
+        email: formData.email || profile.email,
+        cccd: formData.cccd || profile.cccd,
+        avatarUrl: newAvatarUrl
+      };
+
+      const res = await fetchAPI("/tenants/me", {
+        method: "PUT",
+        body: JSON.stringify(updateData)
+      });
+
+      if (res.success) {
+        setProfile((prev: any) => ({
+          ...prev,
+          avatar_url: newAvatarUrl
+        }));
+        setFormData((prev: any) => ({
+          ...prev,
+          avatarUrl: newAvatarUrl
+        }));
+        setMessage({ type: "success", text: "Cập nhật ảnh đại diện thành công!" });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: "error", text: err.message || "Không thể cập nhật ảnh đại diện." });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
     email: "",
-    cccd: ""
+    cccd: "",
+    avatarUrl: ""
   });
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -54,7 +119,8 @@ export default function TenantProfilePage() {
           fullName: res.data.fullName || "",
           phone: res.data.phone || "",
           email: res.data.email || "",
-          cccd: res.data.cccd || ""
+          cccd: res.data.cccd || "",
+          avatarUrl: res.data.avatar_url || ""
         });
       }
     } catch (err: any) {
@@ -131,7 +197,8 @@ export default function TenantProfilePage() {
         fullName: profile.fullName || "",
         phone: profile.phone || "",
         email: profile.email || "",
-        cccd: profile.cccd || ""
+        cccd: profile.cccd || "",
+        avatarUrl: profile.avatar_url || ""
       });
     }
     setEditMode(false);
@@ -153,9 +220,39 @@ export default function TenantProfilePage() {
       <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl translate-x-8 -translate-y-8"></div>
         <div className="relative z-10 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0">
-            {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="group relative w-16 h-16 rounded-2xl overflow-hidden bg-white/20 flex items-center justify-center border border-white/30 shrink-0 cursor-pointer hover:border-white/60 transition"
+            title="Đổi ảnh đại diện"
+          >
+            {profile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-3xl font-bold">
+                {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
+              </span>
+            )}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
+              <Camera className="text-white" size={16} />
+            </div>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+              </div>
+            )}
           </div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
           <div>
             <h1 className="text-2xl font-bold">{profile?.fullName || "Sinh viên SmartDorm"}</h1>
             <div className="flex flex-wrap gap-2 mt-1.5 items-center">
