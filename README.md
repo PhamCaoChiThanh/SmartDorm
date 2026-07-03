@@ -1,103 +1,111 @@
-# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX Cloud-Native Tối ưu Chi phí
+# 🚀 Secure SmartDorm - Hệ thống Quản lý KTX Cloud-Native Tối ưu Chi phí & Tích hợp AI
 
-[![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![NodeJS](https://img.shields.io/badge/Node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Cost-Optimized](https://img.shields.io/badge/Cost-Optimized-blue?style=for-the-badge&logo=cash-register)](https://aws.amazon.com/free/)
+[![C# Backend](https://img.shields.io/badge/C%23-ASP.NET%20Core%20%2F%20.NET%2010-blue.svg?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![React Frontend](https://img.shields.io/badge/React-Next.js%2016-black.svg?style=for-the-badge&logo=react)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791.svg?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![AWS Integration](https://img.shields.io/badge/AWS-S3%20%26%20Bedrock%20%26%20Lambda-FF9900.svg?style=for-the-badge&logo=amazon-aws)](https://aws.amazon.com/)
 
-## 💡 Ý tưởng Dự án
-
-**Secure SmartDorm** là hệ thống quản lý Ký túc xá được thiết kế theo mô hình **Fullstack Cloud-Native Tối ưu**. Dự án tập trung vào việc cân bằng giữa hiệu năng cao và chi phí vận hành thấp nhất có thể bằng cách tận dụng triệt để mô hình **Serverless** và gói **AWS Free Tier**.
-Đây là minh chứng cho việc xây dựng một hệ thống quy mô lớn nhưng chỉ tốn phí duy trì gần như bằng 0.
+**Secure SmartDorm** là hệ thống quản lý Ký túc xá toàn diện được thiết kế theo mô hình **Fullstack Cloud-Native Tối ưu**. Hệ thống cung cấp các nghiệp vụ quản lý phòng, điện nước, hợp đồng, xe cộ, bảng tin nội bộ, tích hợp trợ lý AI thông minh để nhắc nợ tự động, đi kèm cơ chế bảo mật phiên làm việc và tối ưu hóa tài nguyên.
 
 ---
 
-## 🏗️ Kiến trúc Hệ thống Tối ưu (Architecture)
+## 💡 Các Tính Năng Nổi Bật Mới Cập Nhật
 
-Hệ thống được rút gọn vào 3 dịch vụ cốt lõi của AWS để tối ưu chi phí và đơn giản hóa vận hành:
+### 1. 🤖 Nhắc Nợ Tự Động Bằng Trí Tuệ Nhân Tạo (AI Debt Reminder)
+- **Công nghệ**: Tích hợp dịch vụ **Amazon Bedrock** (`IBedrockService`) để xử lý ngôn ngữ tự nhiên.
+- **Nghiệp vụ**: Tự động phân tích các hóa đơn chưa thanh toán của sinh viên, đánh giá mức độ trễ hạn và hành vi thanh toán trước đó để sinh ra email nhắc nợ cá nhân hóa với văn phong phù hợp (từ nhắc nhở thân thiện đến thông cáo nghiêm khắc).
+- **Mã nguồn**: [InvoiceController.cs](file:///m:/SmartDorm/backend/Controllers/InvoiceController.cs) và giao diện trực quan tại trang quản trị hóa đơn admin.
 
-- **Compute & API Layer:** [AWS Lambda](https://aws.amazon.com/lambda/) kết hợp với **Function URLs**. Thay vì dùng API Gateway đắt đỏ, hệ thống sử dụng trực tiếp Function URLs để cung cấp Endpoint cho Backend với chi phí $0.
-- **Database Layer:** [Amazon RDS](https://aws.random.com/rds/) (PostgreSQL). Sử dụng gói `db.t4g.micro` để tận dụng 12 tháng miễn phí, đảm bảo lưu trữ dữ liệu an toàn và tin cậy.
-- **Storage & Frontend Hosting:** [Amazon S3](https://aws.amazon.com/s3/). Đóng vai trò kép: Hosting cho ứng dụng React/Next.js (Static Website Hosting) và lưu trữ ảnh (CCCD, phòng, xe).
+### 2. 📸 Tải Ảnh Đại Diện Local Tốc Độ Cao (Avatar Upload)
+- **Công nghệ**: Phục vụ file tĩnh trực tiếp trên Web Server C# thông qua cấu hình `PhysicalFileProvider` tại [Program.cs](file:///m:/SmartDorm/backend/Program.cs).
+- **Tính năng**: Cho phép sinh viên đăng tải ảnh đại diện với mọi loại kích thước (vượt qua giới hạn size thông thường thông qua thuộc tính `[DisableRequestSizeLimit]`), tự động lưu trữ cục bộ tại thư mục `/wwwroot/uploads` của backend và liên kết trực tiếp vào cơ sở dữ liệu PostgreSQL.
 
----
-
-## 🧱 Stack Công nghệ (The Big Three)
-
-| Thành phần | Công nghệ sử dụng | Chi phí (Free Tier) |
-| :--- | :--- | :--- |
-| **Backend Logic** | AWS Lambda (Node.js/C#) | $0 (1M requests/mo) |
-| **Database** | Amazon RDS (PostgreSQL) | $0 (750 hrs/mo) |
-| **Frontend & Assets** | Amazon S3 | ~$0.1 (Storage only) |
+### 3. 🔒 Bảo Mật Phiên Làm Việc Nghiêm Ngặt (Session Security)
+- **Công nghệ**: Chuyển đổi toàn bộ cơ chế lưu trữ phiên xác thực JWT từ `localStorage` sang **`sessionStorage`** trên toàn bộ 15 tệp giao diện.
+- **Hiệu quả**: Đảm bảo trạng thái đăng nhập bị hủy bỏ lập tức ngay khi người dùng tắt tab hoặc đóng trình duyệt. Lần truy cập tiếp theo bắt buộc phải nhập lại thông tin tài khoản, tránh rò rỉ session trên các thiết bị dùng chung.
 
 ---
 
-## 🛡️ Chiến lược Bảo mật & Tối ưu (Security & Cost)
+## 🏗️ Kiến Trúc Công Nghệ (Technology Stack)
 
-Mặc dù tối giản về dịch vụ, dự án vẫn áp dụng các tiêu chuẩn bảo mật nghiêm ngặt:
+Hệ thống được phát triển chuyên nghiệp với sự phân tách rõ ràng giữa các lớp:
 
-* **Auth tự quản lý:** Sử dụng **JWT (JSON Web Token)** tích hợp trực tiếp trong Backend Lambda thay vì dùng Cognito, giúp giảm phụ thuộc và tối ưu tốc độ.
-* **White-listing Database:** RDS được cấu hình Publicly Accessible nhưng **chỉ chấp nhận kết nối từ Security Group của Lambda**, ngăn chặn hoàn toàn các truy cập từ bên ngoài internet.
-* **Zero Infrastructure Fee:** Loại bỏ NAT Gateway ($32/tháng) bằng cách tối ưu hóa Routing, đưa chi phí vận hành cố định về mức $0.
-* **Monitoring:** Sử dụng **Amazon CloudWatch** để theo dõi lỗi và tình trạng hệ thống theo thời gian thực.
-
----
-
-## ⭐ Tại sao dự án này có "CV cực mạnh"?
-
-Dự án thể hiện tư duy thực tế của một kỹ sư Cloud:
-
-1. **Cost Efficiency:** Biết cách thiết kế hệ thống chạy ổn định với chi phí thấp nhất (Skill tối quan trọng cho doanh nghiệp).
-2. **Serverless Mastery:** Thành thạo kiến trúc Event-driven và Lambda Function URLs.
-3. **Fullstack Ownership:** Tự quản lý từ hạ tầng (Terraform), Database đến Frontend/Backend.
-4. **Database Design:** Thiết kế chuẩn hóa dữ liệu cho một bài toán thực tế (Quản lý phòng, xe, điện nước).
+*   **Backend (C#):** Web API được xây dựng trên nền tảng **ASP.NET Core / .NET 10.0** cực kỳ mạnh mẽ, sử dụng Entity Framework Core để quản lý và tương tác dữ liệu. Tích hợp sẵn AWS SDK cho S3 và Bedrock.
+*   **Frontend (JavaScript/TypeScript):** Ứng dụng client-side hiện đại sử dụng **React 19** và framework **Next.js 16 (Turbopack)** cho hiệu năng tải trang và trải nghiệm người dùng tối ưu.
+*   **Database:** Hệ quản trị cơ sở dữ liệu quan hệ **PostgreSQL**, quản lý dữ liệu lịch sử hóa đơn, người dùng, xe cộ, yêu cầu bảo trì và các bảng tin giao tiếp nội bộ (`posts`, `comments`, `notifications`).
 
 ---
 
-## 📂 Cấu trúc Thư mục (Project Structure)
+## 📂 Cấu Trúc Thư Mục Dự Án
 
 ```text
-.
-├── .github/workflows/   # CI/CD pipelines (GitHub Actions)
-├── terraform/           # Hạ tầng mã hóa (IaC) cho AWS
-│   ├── main.tf          # Cấu hình chính
-│   ├── rds.tf           # PostgreSQL setup
-│   ├── lambda.tf        # Lambda & IAM Roles
-│   ├── s3.tf            # Hosting & Assets
-│   └── monitoring.tf    # CloudWatch Logs & Alarms
-├── src/
-│   ├── backend/         # Logic xử lý (Lambda)
-│   │   └── modules/
-│   │       └── vehicles/# Module Quản lý Xe & Gửi xe
-│   └── frontend/        # React/Next.js source
-├── .env.example         # Template biến môi trường
-└── database.sql         # Schema khởi tạo DB
+SmartDorm/
+├── backend/                   # C# Backend Web API (NET 10)
+│   ├── Controllers/           # Các bộ điều khiển API (Auth, Invoice, Tenant, Request...)
+│   ├── Data/                  # Lớp kết nối dữ liệu (AppDbContext.cs)
+│   ├── Models/                # Định nghĩa các thực thể C# (Models.cs)
+│   ├── Services/              # Các dịch vụ nghiệp vụ (Ocr, Email, Pdf, Bedrock...)
+│   ├── Properties/            # Cấu hình khởi chạy (launchSettings.json)
+│   ├── wwwroot/               # Thư mục lưu trữ file tĩnh cục bộ (uploads/)
+│   └── appsettings.json       # Cấu hình môi trường chạy
+├── frontend/                  # React / Next.js Frontend (Next 16)
+│   ├── app/                   # Next.js Pages & Layouts (admin, tenant, login...)
+│   ├── components/            # Các component dùng chung (ThemeToggle, Modals...)
+│   ├── lib/                   # API utilities & helper functions (api.ts)
+│   └── public/                # Assets tĩnh của frontend
+└── database.sql               # File schema khởi tạo toàn bộ cấu trúc bảng PostgreSQL
 ```
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Triển khai
+## 🚀 Hướng Dẫn Khởi Chạy Môi Trường Local
 
-### 1. Triển khai Hạ tầng (Terraform)
-1. Cài đặt Terraform và AWS CLI.
-2. Di chuyển vào thư mục `terraform/`.
-3. Chạy lệnh:
+### Yêu Cầu Cài Đặt Sẵn:
+- **.NET SDK 10.0**
+- **Node.js (phiên bản 18+)**
+- **PostgreSQL (phiên bản 14+)**
+
+### 1. Khởi tạo Cơ sở dữ liệu
+1. Đăng nhập vào PostgreSQL và tạo một database mới tên là `smartdorm`.
+2. Khởi chạy toàn bộ cấu trúc bảng bằng cách chạy file SQL:
    ```bash
-   terraform init
-   terraform apply -var="db_password=YOUR_PASSWORD"
+   psql -U postgres -d smartdorm -f database.sql
    ```
 
-### 2. Cấu hình Biến môi trường
-Copy `.env.example` thành `.env` và cập nhật các thông số từ Output của Terraform (RDS Endpoint, Lambda URL).
+### 2. Cấu hình & Khởi chạy Backend C#
+1. Mở tệp [appsettings.Development.json](file:///m:/SmartDorm/backend/appsettings.Development.json) và điều chỉnh connection string của bạn:
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Host=localhost;Database=smartdorm;Username=postgres;Password=YOUR_DB_PASSWORD;Port=5432"
+   }
+   ```
+2. Cấu hình SMTP Email và AWS Credentials trong [appsettings.json](file:///m:/SmartDorm/backend/appsettings.json) để sử dụng các tính năng thông báo và AI Bedrock.
+3. Di chuyển vào thư mục backend và chạy lệnh:
+   ```bash
+   cd backend
+   dotnet run
+   ```
+   *Lưu ý: API sẽ lắng nghe tại cổng `http://localhost:3001`.*
 
-### 3. CI/CD (GitHub Actions)
-Thiết lập các **Secrets** trong GitHub Repository:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `DB_PASSWORD`
-
-Hệ thống sẽ tự động Deploy mỗi khi bạn push code lên nhánh `main`.
+### 3. Cấu hình & Khởi chạy Frontend Next.js
+1. Cấu hình API URL trong tệp `.env` ở thư mục frontend (hoặc mặc định ứng dụng sẽ tự trỏ đến `http://localhost:3001/api`).
+2. Di chuyển vào thư mục frontend, cài đặt dependency và chạy:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   *Lưu ý: Giao diện người dùng sẽ chạy tại địa chỉ `http://localhost:3000`.*
 
 ---
 
-**Secure SmartDorm** - *Maximum Performance, Minimum Cost.*
+## 🔑 Tài Khoản Thử Nghiệm Mặc Định
+- **Quản trị viên (ADMIN)**:
+  - Tên đăng nhập: `admin`
+  - Mật khẩu: `123456`
+- **Sinh viên (TENANT)**:
+  - Tên đăng nhập: `chithanh123`
+  - Mật khẩu: `Chithanh123@`
+
+---
+**Secure SmartDorm** - *Hiệu năng đỉnh cao, Chi phí tối ưu, Trải nghiệm an toàn.*
