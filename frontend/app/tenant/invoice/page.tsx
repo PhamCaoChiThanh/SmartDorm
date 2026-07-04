@@ -44,16 +44,6 @@ const paymentMethods = [
       accountName: "PHAM CAO CHI THANH",
     },
   },
-  {
-    id: "zalopay",
-    label: "ZaloPay",
-    description: "Ví điện tử ZaloPay",
-    icon: <Smartphone size={22} className="text-blue-400" />,
-    detail: {
-      phone: "0909 888 999",
-      accountName: "SmartDorm",
-    },
-  },
 ];
 
 type Step = "select" | "confirm";
@@ -682,7 +672,7 @@ export default function TenantInvoice() {
                       />
                     </>
                   )}
-                  {(method.id === "momo" || method.id === "zalopay") && (
+                  {method.id === "momo" && (
                     <>
                       <InfoRow
                         label="Số điện thoại"
