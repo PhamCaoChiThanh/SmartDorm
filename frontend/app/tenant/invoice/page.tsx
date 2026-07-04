@@ -700,41 +700,9 @@ export default function TenantInvoice() {
                   <span className="font-bold text-blue-600 text-base">{total.toLocaleString("vi-VN")}đ</span>
                 </div>
 
-                {/* Simulated Receipt OCR File Uploader (WOW factor!) */}
-                <div className="border border-dashed border-emerald-200 bg-emerald-50/50 p-4 rounded-2xl flex flex-col items-center text-center gap-2">
-                  <Sparkles className="text-emerald-600 animate-pulse" size={20} />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-800">📸 Tự động đối khớp bằng AI/OCR</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Tải ảnh chụp màn hình biên lai chuyển khoản để duyệt hóa đơn ngay lập tức</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleReceiptOcr}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition shadow-xs"
-                  >
-                    <UploadCloud size={14} /> Tải lên biên lai
-                  </button>
-                </div>
-
-                <div className="text-[10px] text-gray-400 text-center">
-                  Hoặc bấm xác nhận thủ công nếu không tải được ảnh
-                </div>
-
                 <button
                   onClick={handleConfirmPaid}
-                  disabled={!receiptUploaded}
-                  className={`w-full py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-                    receiptUploaded
-                      ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-md"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 >
                   <CheckCircle2 size={18} />
                   Xác nhận tôi đã chuyển tiền
