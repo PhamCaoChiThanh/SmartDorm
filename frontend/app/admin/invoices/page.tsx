@@ -725,7 +725,7 @@ export default function AdminInvoices() {
                 <select
                   value={genContractId}
                   onChange={(e) => setGenContractId(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {contracts.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -737,7 +737,7 @@ export default function AdminInvoices() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tháng</label>
-                  <select value={genMonth} onChange={(e) => setGenMonth(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select value={genMonth} onChange={(e) => setGenMonth(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                       <option key={m} value={m}>Tháng {m}</option>
                     ))}
@@ -745,7 +745,7 @@ export default function AdminInvoices() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Năm</label>
-                  <input type="number" value={genYear} onChange={(e) => setGenYear(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={genYear} onChange={(e) => setGenYear(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
               <div className="flex gap-3 justify-end">
@@ -776,7 +776,7 @@ export default function AdminInvoices() {
                   type="number"
                   value={editRoomFee}
                   onChange={(e) => setEditRoomFee(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -787,7 +787,7 @@ export default function AdminInvoices() {
                     type="number"
                     value={editElectricFee}
                     onChange={(e) => setEditElectricFee(e.target.value)}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -797,7 +797,7 @@ export default function AdminInvoices() {
                     type="number"
                     value={editWaterFee}
                     onChange={(e) => setEditWaterFee(e.target.value)}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -809,7 +809,7 @@ export default function AdminInvoices() {
                     type="number"
                     value={editPaidAmount}
                     onChange={(e) => setEditPaidAmount(e.target.value)}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -818,7 +818,7 @@ export default function AdminInvoices() {
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border rounded-xl px-3 py-2 text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="PENDING">Chờ thanh toán</option>
                     <option value="PAID">Đã thanh toán</option>
