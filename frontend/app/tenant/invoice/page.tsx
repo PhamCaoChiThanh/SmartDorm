@@ -40,7 +40,7 @@ const paymentMethods = [
     description: "Ví điện tử MoMo",
     icon: <Wallet size={22} className="text-pink-500" />,
     detail: {
-      phone: "0704569016",
+      phone: "PSP2607411100000389",
       accountName: "PHAM CAO CHI THANH",
     },
   },
@@ -650,7 +650,7 @@ export default function TenantInvoice() {
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`2|99|0704569016|PHAM CAO CHI THANH||0|0|${total}|${qrTransferContent}`)}`}
+                      src={`https://img.vietqr.io/image/MOMO-PSP2607411100000389-compact2.png?amount=${total}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent("PHAM CAO CHI THANH")}`}
                       alt="MoMo QR Code"
                       className="w-48 h-48 object-contain border rounded-xl shadow-xs"
                     />
@@ -679,7 +679,7 @@ export default function TenantInvoice() {
                   {method.id === "momo" && (
                     <>
                       <InfoRow
-                        label="Số điện thoại"
+                        label={method.detail.phone?.startsWith("PSP") ? "Số tài khoản" : "Số điện thoại"}
                         value={method.detail.phone || ""}
                         onCopy={() => handleCopy(method.detail.phone || "", "phone")}
                         copied={copied === "phone"}
