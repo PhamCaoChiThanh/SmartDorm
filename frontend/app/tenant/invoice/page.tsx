@@ -34,16 +34,6 @@ const paymentMethods = [
       accountName: "PHAM CAO CHI THANH",
     },
   },
-  {
-    id: "momo",
-    label: "MoMo",
-    description: "Ví điện tử MoMo",
-    icon: <Wallet size={22} className="text-pink-500" />,
-    detail: {
-      phone: "0704569016",
-      accountName: "PHAM CAO CHI THANH",
-    },
-  },
 ];
 
 type Step = "select" | "confirm";
@@ -55,8 +45,8 @@ export default function TenantInvoice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>("select");
+  const [selectedMethod, setSelectedMethod] = useState<string | null>("bank");
+  const [step, setStep] = useState<Step>("confirm");
   const [copied, setCopied] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -202,8 +192,8 @@ export default function TenantInvoice() {
 
   const handleClose = () => {
     setShowModal(false);
-    setStep("select");
-    setSelectedMethod(null);
+    setStep("confirm");
+    setSelectedMethod("bank");
     setReceiptUploaded(false);
   };
 
@@ -570,153 +560,62 @@ export default function TenantInvoice() {
       )}
 
       {/* Modal */}
-      {showModal && (
+      {showModal && method && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl text-gray-800">
 
             {/* Header */}
             <div className="flex justify-between items-center border-b pb-2">
-              <div className="flex items-center gap-2">
-                {step === "confirm" && (
-                  <button
-                    onClick={() => setStep("select")}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-bold"
-                  >
-                    ← Quay lại
-                  </button>
-                )}
-                <h3 className="font-semibold text-base text-slate-800">
-                  {step === "select" ? "Chọn phương thức thanh toán" : "Thông tin thanh toán"}
-                </h3>
-              </div>
+              <h3 className="font-semibold text-base text-slate-800">
+                Thông tin thanh toán
+              </h3>
               <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Bước 1: Chọn phương thức */}
-            {step === "select" && (
-              <>
-                <div className="space-y-2">
-                  {paymentMethods.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setSelectedMethod(m.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition text-left ${
-                        selectedMethod === m.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                        {m.icon}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-800">{m.label}</p>
-                        <p className="text-xs text-gray-400">{m.description}</p>
-                      </div>
-                      {selectedMethod === m.id
-                        ? <CheckCircle2 size={18} className="text-blue-500" />
-                        : <ChevronRight size={18} className="text-gray-300" />
-                      }
-                    </button>
-                  ))}
-                </div>
+            {/* Dynamic VietQR code display */}
+            <div className="flex flex-col items-center p-3 bg-linear-to-b from-indigo-50/50 to-white rounded-2xl border border-indigo-100/50">
+              <div className="flex items-center gap-1.5 text-indigo-700 font-bold text-xs mb-2">
+                <QrCode size={14} /> Quét mã VietQR để thanh toán nhanh
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={vietQrUrl}
+                alt="VietQR Code"
+                className="w-48 h-48 object-contain border rounded-xl shadow-xs"
+              />
+            </div>
 
-                <button
-                  onClick={() => setStep("confirm")}
-                  disabled={!selectedMethod}
-                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Tiếp tục
-                </button>
-              </>
-            )}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
+              <InfoRow label="Ngân hàng" value={method.detail.bankName || ""} />
+              <InfoRow
+                label="Số tài khoản"
+                value={method.detail.accountNumber || ""}
+                onCopy={() => handleCopy(method.detail.accountNumber || "", "acc")}
+                copied={copied === "acc"}
+              />
+              <InfoRow label="Chủ tài khoản" value={method.detail.accountName || ""} />
+              <InfoRow
+                label="Nội dung CK"
+                value={qrTransferContent}
+                onCopy={() => handleCopy(qrTransferContent, "content")}
+                copied={copied === "content"}
+              />
+            </div>
 
-            {/* Bước 2: Thông tin thanh toán */}
-            {step === "confirm" && method && (
-              <>
-                {/* Dynamic VietQR code display */}
-                {method.id === "bank" && (
-                  <div className="flex flex-col items-center p-3 bg-linear-to-b from-indigo-50/50 to-white rounded-2xl border border-indigo-100/50">
-                    <div className="flex items-center gap-1.5 text-indigo-700 font-bold text-xs mb-2">
-                      <QrCode size={14} /> Quét mã VietQR để thanh toán nhanh
-                    </div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={vietQrUrl}
-                      alt="VietQR Code"
-                      className="w-48 h-48 object-contain border rounded-xl shadow-xs"
-                    />
-                  </div>
-                )}
+            <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-3">
+              <span>Số tiền cần chuyển</span>
+              <span className="font-bold text-blue-600 text-base">{total.toLocaleString("vi-VN")}đ</span>
+            </div>
 
-                {method.id === "momo" && (
-                  <div className="flex flex-col items-center p-3 bg-linear-to-b from-pink-50/50 to-white rounded-2xl border border-pink-100/50">
-                    <div className="flex items-center gap-1.5 text-pink-700 font-bold text-xs mb-2">
-                      <QrCode size={14} /> Quét mã MoMo để thanh toán nhanh
-                    </div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`2|99|0704569016|PHAM CAO CHI THANH||0|0|${total}`)}`}
-                      alt="MoMo QR Code"
-                      className="w-48 h-48 object-contain border rounded-xl shadow-xs"
-                    />
-                  </div>
-                )}
-
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
-                  {method.id === "bank" && (
-                    <>
-                      <InfoRow label="Ngân hàng" value={method.detail.bankName || ""} />
-                      <InfoRow
-                        label="Số tài khoản"
-                        value={method.detail.accountNumber || ""}
-                        onCopy={() => handleCopy(method.detail.accountNumber || "", "acc")}
-                        copied={copied === "acc"}
-                      />
-                      <InfoRow label="Chủ tài khoản" value={method.detail.accountName || ""} />
-                      <InfoRow
-                        label="Nội dung CK"
-                        value={qrTransferContent}
-                        onCopy={() => handleCopy(qrTransferContent, "content")}
-                        copied={copied === "content"}
-                      />
-                    </>
-                  )}
-                  {method.id === "momo" && (
-                    <>
-                      <InfoRow
-                        label="Số điện thoại"
-                        value={method.detail.phone || ""}
-                        onCopy={() => handleCopy(method.detail.phone || "", "phone")}
-                        copied={copied === "phone"}
-                      />
-                      <InfoRow label="Tên tài khoản" value={method.detail.accountName || ""} />
-                      <InfoRow
-                        label="Nội dung"
-                        value={qrTransferContent}
-                        onCopy={() => handleCopy(qrTransferContent, "content")}
-                        copied={copied === "content"}
-                      />
-                    </>
-                  )}
-                </div>
-
-                <div className="flex justify-between items-center text-sm text-gray-500 border-t pt-3">
-                  <span>Số tiền cần chuyển</span>
-                  <span className="font-bold text-blue-600 text-base">{total.toLocaleString("vi-VN")}đ</span>
-                </div>
-
-                <button
-                  onClick={handleConfirmPaid}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
-                >
-                  <CheckCircle2 size={18} />
-                  Xác nhận tôi đã chuyển tiền
-                </button>
-              </>
-            )}
+            <button
+              onClick={handleConfirmPaid}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            >
+              <CheckCircle2 size={18} />
+              Xác nhận tôi đã chuyển tiền
+            </button>
           </div>
         </div>
       )}
