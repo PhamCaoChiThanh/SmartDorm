@@ -29,7 +29,8 @@ namespace SmartDorm.Api.Models
     {
         PENDING,
         PAID,
-        OVERDUE
+        OVERDUE,
+        WAITING_APPROVAL
     }
 
     public enum UtilityType

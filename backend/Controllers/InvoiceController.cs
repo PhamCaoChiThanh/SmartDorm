@@ -224,7 +224,22 @@ namespace SmartDorm.Api.Controllers
                     return BadRequest(new { success = false, message = "Hóa đơn không tồn tại hoặc đã được thanh toán." });
                 }
 
-                // Update invoice
+                // Check role
+                var isTenant = User.IsInRole("TENANT");
+                if (isTenant)
+                {
+                    // Tenant is notifying they transferred
+                    invoice.Status = InvoiceStatus.WAITING_APPROVAL;
+                    invoice.PaymentDate = DateTimeOffset.UtcNow; // Record when they requested approval
+                    invoice.UpdatedAt = DateTimeOffset.UtcNow;
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { success = true, message = "Đã gửi thông báo thanh toán cho Quản trị viên phê duyệt.", data = invoice });
+                }
+
+                // Otherwise, Admin/Manager paying directly
                 invoice.Status = InvoiceStatus.PAID;
                 invoice.PaidAmount = invoice.TotalAmount ?? 0;
                 invoice.PaymentDate = DateTimeOffset.UtcNow;
@@ -299,6 +314,102 @@ namespace SmartDorm.Api.Controllers
             {
                 await transaction.RollbackAsync();
                 return StatusCode(500, new { success = false, message = "Lỗi khi thanh toán", error = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/approve")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
+        public async Task<IActionResult> ApproveInvoice(Guid id)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var invoice = await _context.Invoices.FindAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy hóa đơn" });
+                }
+
+                if (invoice.Status == InvoiceStatus.PAID)
+                {
+                    return BadRequest(new { success = false, message = "Hóa đơn đã được thanh toán rồi." });
+                }
+
+                // Update invoice
+                invoice.Status = InvoiceStatus.PAID;
+                invoice.PaidAmount = invoice.TotalAmount ?? 0;
+                invoice.PaymentDate = DateTimeOffset.UtcNow;
+                invoice.UpdatedAt = DateTimeOffset.UtcNow;
+
+                // Create payment record
+                var payment = new Payment
+                {
+                    InvoiceId = id,
+                    Amount = invoice.TotalAmount ?? 0,
+                    PaymentMethod = "BANK_TRANSFER",
+                    PaymentDate = DateTimeOffset.UtcNow
+                };
+
+                _context.Payments.Add(payment);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Send Paid Confirmation Email with Invoice PDF in Background
+                try
+                {
+                    var fullInvoice = await _context.Invoices
+                        .Include(i => i.Contract)
+                            .ThenInclude(c => c!.Tenant)
+                        .Include(i => i.Contract)
+                            .ThenInclude(c => c!.Room)
+                        .FirstOrDefaultAsync(i => i.Id == id);
+
+                    var tenant = fullInvoice?.Contract?.Tenant;
+                    var room = fullInvoice?.Contract?.Room;
+
+                    if (tenant != null && room != null && !string.IsNullOrEmpty(tenant.Email))
+                    {
+                        var usages = await _context.UtilityUsages
+                            .Where(u => u.RoomId == room.Id && u.BillingMonth == fullInvoice.BillingMonth && u.BillingYear == fullInvoice.BillingYear)
+                            .ToListAsync();
+
+                        var roommateCount = await _context.Contracts
+                            .CountAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.ACTIVE);
+                        if (roommateCount <= 0) roommateCount = 1;
+
+                        var pdfBytes = _pdfService.GenerateInvoicePdf(fullInvoice, tenant, room, usages, roommateCount);
+                        var fileName = $"HoaDon_DaThanhToan_Phong{room.RoomNumber}_T{fullInvoice.BillingMonth}_{fullInvoice.BillingYear}.pdf";
+
+                        string subject = $"✅ [SmartDorm] Xác nhận thanh toán hóa đơn tháng {fullInvoice.BillingMonth}/{fullInvoice.BillingYear} - Phòng {room.RoomNumber}";
+                        string body = $"<p>Xin chào <b>{tenant.FullName}</b>,</p>" +
+                                      $"<p>Ban quản lý KTX SmartDorm xác nhận đã nhận được khoản thanh toán cho <b>Hóa đơn tiền phòng</b> tháng <b>{fullInvoice.BillingMonth}/{fullInvoice.BillingYear}</b>.</p>" +
+                                      $"<p>Trạng thái hóa đơn: <b style='color:green'>ĐÃ THANH TOÁN</b></p>" +
+                                      $"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-size:14px;'>" +
+                                      $"<tr style='background:#1e3a5f;color:white'><th>Khoản mục</th><th>Thành tiền</th></tr>" +
+                                      $"<tr><td>Tiền phòng</td><td><b>{fullInvoice.RoomFee:N0} VND</b></td></tr>" +
+                                      $"<tr style='background:#f8f9fa'><td>Điện</td><td><b>{fullInvoice.ElectricFee:N0} VND</b></td></tr>" +
+                                      $"<tr><td>Nước</td><td><b>{fullInvoice.WaterFee:N0} VND</b></td></tr>" +
+                                      $"<tr style='background:#f8f9fa'><td>Phí rác</td><td><b>{(fullInvoice.TotalAmount - fullInvoice.RoomFee - fullInvoice.ElectricFee - fullInvoice.WaterFee):N0} VND</b></td></tr>" +
+                                      $"<tr style='background:#e2e8f0'><td><b>Tổng cộng</b></td><td><b style='color:#b91c1c'>{fullInvoice.TotalAmount:N0} VND</b></td></tr>" +
+                                      $"</table>" +
+                                      $"<p>Hóa đơn chi tiết định dạng PDF đã được đính kèm trong email này.</p>" +
+                                      $"<p>Trân trọng,<br>Ban quản lý KTX SmartDorm</p>";
+
+                        await _emailService.SendEmailAsync(tenant.Email, subject, body, pdfBytes, fileName);
+                    }
+                }
+                catch (Exception mailEx)
+                {
+                    Console.WriteLine("Lỗi gửi email xác nhận đã duyệt hóa đơn: " + mailEx.Message);
+                }
+
+                return Ok(new { success = true, message = "Duyệt thanh toán hóa đơn thành công." });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { success = false, message = "Lỗi khi duyệt thanh toán", error = ex.Message });
             }
         }
 

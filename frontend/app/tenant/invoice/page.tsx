@@ -217,7 +217,7 @@ export default function TenantInvoice() {
         })
       });
       if (res.success) {
-        setInvoice((prev: any) => ({ ...prev, status: "PAID" }));
+        setInvoice((prev: any) => ({ ...prev, status: "WAITING_APPROVAL" }));
         setNotifications(prev => prev.map(n => n.message.includes("Hóa đơn") ? { ...n, read: true } : n));
         handleClose();
       } else {
@@ -345,6 +345,7 @@ export default function TenantInvoice() {
   const total = invoiceItems.reduce((sum, i) => sum + i.amount, 0);
   const method = paymentMethods.find((m) => m.id === selectedMethod);
   const isPaid = invoice?.status === "PAID" || invoice?.status === "ĐÃ THANH TOÁN";
+  const isWaitingApproval = invoice?.status === "WAITING_APPROVAL" || invoice?.status === "WAITING";
 
   // Dynamic VietQR Generation URL
   const qrTransferContent = invoice ? `SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}` : "";
@@ -399,11 +400,13 @@ export default function TenantInvoice() {
               <FileText size={16} className="text-gray-500" />
               Tháng {invoice.billingMonth}/{invoice.billingYear}
             </h2>
-            <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-              isPaid ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-            }`}>
-              {isPaid ? "ĐÃ THANH TOÁN" : "PENDING"}
-            </span>
+            {isPaid ? (
+              <span className="text-xs px-2 py-1 rounded-full font-bold bg-green-100 text-green-700">ĐÃ THANH TOÁN</span>
+            ) : isWaitingApproval ? (
+              <span className="text-xs px-2 py-1 rounded-full font-bold bg-blue-100 text-blue-700 animate-pulse">CHỜ DUYỆT</span>
+            ) : (
+              <span className="text-xs px-2 py-1 rounded-full font-bold bg-yellow-100 text-yellow-700">CHỜ THANH TOÁN</span>
+            )}
           </div>
 
           <p className="text-sm text-gray-500 mb-3">Phòng: {roomNumber} · Hạn: {invoice.dueDate || `${invoice.billingYear}-${String(invoice.billingMonth).padStart(2, '0')}-20`}</p>
@@ -421,15 +424,7 @@ export default function TenantInvoice() {
             </div>
           </div>
 
-          {!isPaid ? (
-            <button
-              onClick={() => setShowModal(true)}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
-            >
-              <CreditCard size={18} />
-              Thanh toán ngay
-            </button>
-          ) : (
+          {isPaid ? (
             <div className="space-y-2">
               <div className="text-center text-green-600 font-medium py-2 flex items-center justify-center gap-2 bg-green-50 rounded-lg border border-green-100">
                 <CheckCircle2 size={18} />
@@ -442,6 +437,19 @@ export default function TenantInvoice() {
                 <FileText size={16} /> Tải hóa đơn PDF
               </button>
             </div>
+          ) : isWaitingApproval ? (
+            <div className="text-center text-blue-600 font-medium py-2.5 flex items-center justify-center gap-2 bg-blue-50 rounded-lg border border-blue-100 text-sm">
+              <Sparkles className="animate-spin text-blue-500" size={18} />
+              Đã gửi xác nhận. Đang chờ Ban quản lý phê duyệt...
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            >
+              <CreditCard size={18} />
+              Thanh toán ngay
+            </button>
           )}
         </div>
       ) : (

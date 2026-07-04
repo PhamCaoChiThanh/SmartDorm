@@ -9,6 +9,7 @@ const statusLabel: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "Chờ thanh toán", cls: "bg-yellow-100 text-yellow-700" },
   PAID: { label: "Đã thanh toán", cls: "bg-green-100 text-green-700" },
   OVERDUE: { label: "Quá hạn", cls: "bg-red-100 text-red-600" },
+  WAITING_APPROVAL: { label: "Chờ duyệt ⏳", cls: "bg-blue-100 text-blue-700 border border-blue-200 animate-pulse font-bold" },
 };
 
 export default function AdminInvoices() {
@@ -117,6 +118,25 @@ export default function AdminInvoices() {
       alert("Lỗi khi gửi hóa đơn: " + err.message);
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const handleApproveInvoice = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn duyệt thanh toán cho hóa đơn này?")) return;
+    try {
+      const res = await fetchAPI(`/invoices/${id}/approve`, {
+        method: "POST"
+      });
+      if (res.success) {
+        // Update local state status to PAID
+        setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "PAID" } : inv));
+        alert("Đã duyệt thanh toán thành công!");
+      } else {
+        alert(res.message || "Duyệt thất bại.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Lỗi khi duyệt thanh toán: " + err.message);
     }
   };
 
@@ -644,6 +664,17 @@ export default function AdminInvoices() {
                                               <span className="text-green-600 text-[11px] font-semibold flex items-center gap-0.5">
                                                 ✅ Đã thanh toán
                                               </span>
+                                            ) : inv.status === "WAITING_APPROVAL" ? (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleApproveInvoice(inv.id);
+                                                }}
+                                                className="flex items-center gap-0.5 bg-emerald-600 text-white hover:bg-emerald-700 px-2 py-1 rounded text-[10px] font-bold transition shadow-xs cursor-pointer"
+                                              >
+                                                <CheckCircle size={10} />
+                                                Duyệt
+                                              </button>
                                             ) : isSent ? (
                                               <span className="text-green-600 text-[11px] font-semibold">✅ Đã gửi!</span>
                                             ) : (
