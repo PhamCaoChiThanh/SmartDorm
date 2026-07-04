@@ -650,7 +650,7 @@ export default function TenantInvoice() {
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://img.vietqr.io/image/VietCapitalBank-0704569016-compact2.png?amount=${total}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent("PHAM CAO CHI THANH")}`}
+                      src={`https://img.vietqr.io/image/MOMO-0704569016-compact2.png?amount=${total}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent("PHAM CAO CHI THANH")}`}
                       alt="MoMo QR Code"
                       className="w-48 h-48 object-contain border rounded-xl shadow-xs"
                     />
