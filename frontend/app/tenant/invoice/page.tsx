@@ -650,7 +650,7 @@ export default function TenantInvoice() {
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`https://nhantien.momo.vn/0704569016`)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`https://me.momo.vn/0704569016`)}`}
                       alt="MoMo QR Code"
                       className="w-48 h-48 object-contain border rounded-xl shadow-xs"
                     />
