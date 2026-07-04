@@ -40,8 +40,8 @@ const paymentMethods = [
     description: "Ví điện tử MoMo",
     icon: <Wallet size={22} className="text-pink-500" />,
     detail: {
-      phone: "0909 123 456",
-      accountName: "SmartDorm",
+      phone: "0704569016",
+      accountName: "PHAM CAO CHI THANH",
     },
   },
   {
@@ -644,6 +644,20 @@ export default function TenantInvoice() {
                     <img
                       src={vietQrUrl}
                       alt="VietQR Code"
+                      className="w-48 h-48 object-contain border rounded-xl shadow-xs"
+                    />
+                  </div>
+                )}
+
+                {method.id === "momo" && (
+                  <div className="flex flex-col items-center p-3 bg-linear-to-b from-pink-50/50 to-white rounded-2xl border border-pink-100/50">
+                    <div className="flex items-center gap-1.5 text-pink-700 font-bold text-xs mb-2">
+                      <QrCode size={14} /> Quét mã MoMo để thanh toán nhanh
+                    </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`https://nhantien.momo.vn/0704569016/${total}`)}`}
+                      alt="MoMo QR Code"
                       className="w-48 h-48 object-contain border rounded-xl shadow-xs"
                     />
                   </div>
