@@ -61,6 +61,7 @@ export default function TenantInvoice() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [roomAnalytic, setRoomAnalytic] = useState<any>(null);
+  const [receiptUploaded, setReceiptUploaded] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,6 +204,7 @@ export default function TenantInvoice() {
     setShowModal(false);
     setStep("select");
     setSelectedMethod(null);
+    setReceiptUploaded(false);
   };
 
   const handleConfirmPaid = async () => {
@@ -247,6 +249,8 @@ export default function TenantInvoice() {
       });
 
       if (!response.ok) throw new Error("Không thể đọc biên lai");
+
+      setReceiptUploaded(true);
 
       const result = await response.json();
       if (result.success) {
@@ -725,7 +729,12 @@ export default function TenantInvoice() {
 
                 <button
                   onClick={handleConfirmPaid}
-                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  disabled={!receiptUploaded}
+                  className={`w-full py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                    receiptUploaded
+                      ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-md"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   <CheckCircle2 size={18} />
                   Xác nhận tôi đã chuyển tiền
