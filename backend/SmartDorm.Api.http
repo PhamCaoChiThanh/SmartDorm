@@ -1,0 +1,6 @@
+@SmartDorm.Api_HostAddress = http://localhost:5038
+
+GET {{SmartDorm.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,26 @@
+{
+  "name": "smartdorm",
+  "version": "1.0.0",
+  "description": "[![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)\r [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)\r [![NodeJS](https://img.shields.io/badge/Node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)\r [![Cost-Optimized](https://img.shields.io/badge/Cost-Optimized-blue?style=for-the-badge&logo=cash-register)](https://aws.amazon.com/free/)",
+  "main": "createAdmin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PhamCaoChiThanh/SmartDorm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/PhamCaoChiThanh/SmartDorm/issues"
+  },
+  "homepage": "https://github.com/PhamCaoChiThanh/SmartDorm#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "pg": "^8.22.0"
+  }
+}
