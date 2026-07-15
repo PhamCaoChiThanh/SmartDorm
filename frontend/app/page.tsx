@@ -298,7 +298,7 @@ export default function HomePage() {
           </div>
 
           {/* Quick Nav Links */}
-          <nav className="hidden md:flex gap-8 text-sm text-slate-500 font-semibold">
+          <nav className="flex gap-4 md:gap-8 text-xs md:text-sm text-slate-500 font-semibold">
             <button
               onClick={() => {
                 setActiveTab("rooms");
@@ -313,7 +313,7 @@ export default function HomePage() {
                 setActiveTab("home");
                 setTimeout(() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }), 100);
               }}
-              className="hover:text-indigo-600 transition-colors cursor-pointer"
+              className="hidden md:block hover:text-indigo-600 transition-colors cursor-pointer"
             >
               Tiện ích số
             </button>
@@ -322,7 +322,7 @@ export default function HomePage() {
                 setActiveTab("home");
                 setTimeout(() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" }), 100);
               }}
-              className="hover:text-indigo-600 transition-colors cursor-pointer"
+              className="hidden md:block hover:text-indigo-600 transition-colors cursor-pointer"
             >
               Liên hệ
             </button>
