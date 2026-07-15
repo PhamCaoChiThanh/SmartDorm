@@ -89,16 +89,22 @@ export default function HomePage() {
     const name = sessionStorage.getItem("currentName");
     if (name) setCurrentName(name);
 
-    const role = sessionStorage.getItem("currentRole");
-    const lastActiveRoute = sessionStorage.getItem("lastActiveRoute");
-    if (role) {
-      setCurrentRole(role);
-      if (lastActiveRoute && lastActiveRoute !== "/") {
-        router.push(lastActiveRoute);
-        return;
-      } else if (role === "ADMIN" || role === "MANAGER") {
-        router.push("/admin/dashboard");
-        return;
+    const isNavigatingToHome = sessionStorage.getItem("isNavigatingToHome");
+    if (isNavigatingToHome === "true") {
+      sessionStorage.removeItem("isNavigatingToHome");
+      sessionStorage.removeItem("lastActiveRoute");
+    } else {
+      const role = sessionStorage.getItem("currentRole");
+      const lastActiveRoute = sessionStorage.getItem("lastActiveRoute");
+      if (role) {
+        setCurrentRole(role);
+        if (lastActiveRoute && lastActiveRoute !== "/") {
+          router.push(lastActiveRoute);
+          return;
+        } else if (role === "ADMIN" || role === "MANAGER") {
+          router.push("/admin/dashboard");
+          return;
+        }
       }
     }
 
