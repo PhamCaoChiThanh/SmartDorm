@@ -31,10 +31,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     
     setAuthorized(true);
 
-    if (sessionStorage.getItem("isNavigatingToHome") === "true") {
-      return;
-    }
-
     // Save actual route for F5 refresh recovery
     sessionStorage.setItem("lastActiveRoute", pathname);
 
@@ -74,11 +70,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       {/* Header */}
       <header className="bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 shadow-xs px-4 py-3 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
         <div
-          onClick={() => {
-            sessionStorage.setItem("isNavigatingToHome", "true");
-            sessionStorage.removeItem("lastActiveRoute");
-            window.location.href = "/";
-          }}
+          onClick={() => router.push("/")}
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <Home size={22} className="text-blue-600 dark:text-blue-400" />

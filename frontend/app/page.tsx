@@ -89,11 +89,11 @@ export default function HomePage() {
     const name = sessionStorage.getItem("currentName");
     if (name) setCurrentName(name);
 
-    const isNavigatingToHome = sessionStorage.getItem("isNavigatingToHome");
-    if (isNavigatingToHome === "true") {
-      sessionStorage.removeItem("isNavigatingToHome");
-      sessionStorage.removeItem("lastActiveRoute");
-    } else {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasSig = searchParams.has("sig");
+    const hasId = searchParams.has("id");
+
+    if (hasSig && hasId) {
       const role = sessionStorage.getItem("currentRole");
       const lastActiveRoute = sessionStorage.getItem("lastActiveRoute");
       if (role) {
