@@ -72,7 +72,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         <div
           onClick={() => {
             sessionStorage.removeItem("lastActiveRoute");
-            router.push("/");
+            window.location.href = "/";
           }}
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
