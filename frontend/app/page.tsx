@@ -99,9 +99,6 @@ export default function HomePage() {
       } else if (role === "ADMIN" || role === "MANAGER") {
         router.push("/admin/dashboard");
         return;
-      } else if (role === "TENANT") {
-        router.push("/tenant/invoice");
-        return;
       }
     }
 
@@ -456,20 +453,36 @@ export default function HomePage() {
                     <li className="flex items-center gap-2"><ChevronRight size={14} className="text-purple-500" /> Đăng ký giữ xe, quản lý tài sản thông minh</li>
                   </ul>
                 </div>
-                <div className="relative z-10 flex flex-wrap gap-3.5 pt-4 border-t border-slate-100">
+                 <div className="relative z-10 flex flex-wrap gap-3.5 pt-4 border-t border-slate-100">
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => {
+                      if (currentRole === "TENANT") {
+                        router.push("/tenant/invoice");
+                      } else if (currentRole === "ADMIN" || currentRole === "MANAGER") {
+                        router.push("/admin/dashboard");
+                      } else {
+                        router.push("/login");
+                      }
+                    }}
                     className="glow-btn-secondary text-white text-sm font-bold px-6 py-3 rounded-2xl flex items-center gap-2 grow justify-center cursor-pointer"
                   >
                     <LogIn size={16} />
-                    Đăng nhập hệ thống
+                    {currentName ? "Vào trang quản lý" : "Đăng nhập hệ thống"}
                   </button>
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => {
+                      if (currentRole === "TENANT") {
+                        router.push("/tenant/invoice");
+                      } else if (currentRole === "ADMIN" || currentRole === "MANAGER") {
+                        router.push("/admin/dashboard");
+                      } else {
+                        router.push("/login");
+                      }
+                    }}
                     className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-bold px-6 py-3 rounded-2xl flex items-center gap-2 justify-center cursor-pointer"
                   >
                     <ClipboardList size={16} />
-                    Quản lý dịch vụ
+                    {currentName ? "Quản lý dịch vụ" : "Truy cập dịch vụ"}
                   </button>
                 </div>
               </div>
