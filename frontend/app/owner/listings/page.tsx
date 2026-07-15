@@ -167,7 +167,7 @@ export default function OwnerListings() {
                       <span className="text-xs text-gray-400 font-normal">/người/tháng</span>
                     </span>
                     <div className="flex gap-2">
-                      <button onClick={() => router.push(`/rooms/${listing.id}`)}
+                      <button onClick={() => router.push(`/rooms/1?id=${listing.id}`)}
                         className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-500">
                         <Eye size={14} />
                       </button>

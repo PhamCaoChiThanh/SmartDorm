@@ -1,0 +1,143 @@
+---
+title: "5.3 Khởi tạo Terraform"
+date: 2026-07-10
+weight: 3
+chapter: false
+---
+
+## 5.3 Viết mã nguồn Terraform IaC chi tiết để triển khai hạ tầng mạng & RDS
+
+Bằng cách sử dụng kịch bản Terraform dưới đây, người quản trị chỉ cần chạy lệnh để tự động tạo toàn bộ hệ thống mạng và cơ sở dữ liệu trên AWS một cách nhất quán và chuẩn xác.
+
+### 1. Tạo tệp nhà cung cấp dịch vụ `provider.tf`
+Tệp tin quy định Terraform tải thư viện liên kết với AWS và chọn khu vực Singapore (`ap-southeast-1`) để chạy dịch vụ gần Việt Nam nhất, giảm độ trễ:
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+```
+
+### 2. Viết tệp tài nguyên chính `main.tf`
+Đây là cấu hình hạ tầng mạng VPC ảo và CSDL RDS chi tiết nhất:
+```hcl
+# 1. KHỞI TẠO MẠNG VPC ĐỘC LẬP
+resource "aws_vpc" "smartdorm_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags = {
+    Name = "smartdorm-vpc"
+  }
+}
+
+# 2. KHỞI TẠO INTERNET GATEWAY ĐỂ RA MẠNG NGOÀI
+resource "aws_internet_gateway" "smartdorm_igw" {
+  vpc_id = aws_vpc.smartdorm_vpc.id
+  tags = { Name = "smartdorm-igw" }
+}
+
+# 3. CHIA PHÂN VÙNG MẠNG (SUBNETS)
+# Subnet A (Public) - Nơi Lambda chạy để có IP public gọi ra ngoài
+resource "aws_subnet" "smartdorm_subnet_a" {
+  vpc_id                  = aws_vpc.smartdorm_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "ap-southeast-1a"
+  map_public_ip_on_launch = true
+  tags = { Name = "smartdorm-subnet-a" }
+}
+
+# Subnet B (Private) - Nơi đặt Database bảo mật
+resource "aws_subnet" "smartdorm_subnet_b" {
+  vpc_id                  = aws_vpc.smartdorm_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "ap-southeast-1b"
+  map_public_ip_on_launch = true
+  tags = { Name = "smartdorm-subnet-b" }
+}
+
+# 4. ĐỊNH TUYẾN MẠNG (ROUTE TABLE)
+resource "aws_route_table" "smartdorm_rt" {
+  vpc_id = aws_vpc.smartdorm_vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.smartdorm_igw.id
+  }
+}
+
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.smartdorm_subnet_a.id
+  route_table_id = aws_route_table.smartdorm_rt.id
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.smartdorm_subnet_b.id
+  route_table_id = aws_route_table.smartdorm_rt.id
+}
+
+# 5. CẤU HÌNH NHÓM BẢO MẬT (SECURITY GROUP) CHO DATABASE
+resource "aws_security_group" "rds_sg" {
+  name        = "smartdorm_rds_sg"
+  description = "Cho phep ket noi PostgreSQL tu VPC"
+  vpc_id      = aws_vpc.smartdorm_vpc.id
+
+  # Cho phép cổng 5432 (PostgreSQL) từ bất kỳ đâu để bạn quản trị trực tiếp dễ dàng
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# 6. KHỞI TẠO AWS RDS POSTGRESQL DATABASE
+resource "aws_db_subnet_group" "smartdorm_db_subnet_group" {
+  name       = "smartdorm-db-subnet-group"
+  subnet_ids = [aws_subnet.smartdorm_subnet_a.id, aws_subnet.smartdorm_subnet_b.id]
+}
+
+resource "aws_db_instance" "smartdorm_db" {
+  identifier             = "smartdorm-postgres-db"
+  allocated_storage      = 20
+  max_allocated_storage  = 100
+  engine                 = "postgres"
+  engine_version         = "15.4"
+  instance_class         = "db.t4g.micro" # Miễn phí trong Free Tier chạy chip ARM
+  db_name                = "smartdorm"
+  username               = "postgres"
+  password               = var.db_password
+  db_subnet_group_name   = aws_db_subnet_group.smartdorm_db_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  publicly_accessible    = true # Bật truy cập công khai để dev local cấu hình database dễ dàng
+  skip_final_snapshot    = true
+}
+```
+
+### 3. Khai báo biến mật khẩu trong `variables.tf`
+Để tránh lộ mật khẩu database lên GitHub, ta định nghĩa biến:
+```hcl
+variable "aws_region" {
+  type    = string
+  default = "ap-southeast-1"
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+```

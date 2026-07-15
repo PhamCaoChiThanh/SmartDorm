@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Home,
@@ -30,6 +31,51 @@ const menuItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    const role = sessionStorage.getItem("currentRole");
+    if (!token || role !== "ADMIN") {
+      router.push("/");
+      return;
+    }
+    
+    setAuthorized(true);
+
+    // Save actual route for F5 refresh recovery
+    sessionStorage.setItem("lastActiveRoute", pathname);
+
+    const userStr = sessionStorage.getItem("user");
+    let userSubId = "00000000";
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        const idVal = u.id || u.Id || "";
+        if (idVal) userSubId = idVal.toString().substring(0, 8);
+      } catch (e) {}
+    }
+
+    // Generate a signature based on pathname and userSubId
+    let hash = 0;
+    const combined = pathname + userSubId;
+    for (let i = 0; i < combined.length; i++) {
+      hash = (hash << 5) - hash + combined.charCodeAt(i);
+      hash |= 0;
+    }
+    const sig = Math.abs(hash).toString(16).padEnd(8, "0");
+
+    // Mask the browser address bar URL
+    window.history.replaceState(null, "", `/?sig=${sig}&id=${userSubId}`);
+  }, [router, pathname]);
+
+  if (!authorized) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-400 text-sm animate-pulse">Đang xác thực quyền quản trị...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-50">

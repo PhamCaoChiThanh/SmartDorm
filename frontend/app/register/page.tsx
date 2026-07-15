@@ -154,94 +154,96 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-2">🏠 SmartDorm</h1>
-        <p className="text-center text-gray-500 mb-6">Đăng ký tài khoản Tenant</p>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4 py-8">
+      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+        <div>
+          <h1 className="text-3xl font-bold text-center mb-2 text-zinc-900 dark:text-zinc-50">🏠 SmartDorm</h1>
+          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400 mb-6">Đăng ký tài khoản Tenant</p>
+        </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Họ và tên *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Họ và tên *</label>
             <input
               name="fullName"
               value={form.fullName}
               onChange={handleChange}
               placeholder="Nguyễn Văn A"
-              className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">CCCD *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">CCCD *</label>
             <input
               name="cccd"
               value={form.cccd}
               onChange={handleChange}
               placeholder="079123456789"
-              className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Số điện thoại</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Số điện thoại</label>
               <input
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="0901234567"
-                className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Email *</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label>
               <input
                 name="email"
                 value={form.email}
                 onChange={handleChange}
                 placeholder="email@gmail.com"
-                className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Tên đăng nhập *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tên đăng nhập *</label>
             <input
               name="username"
               value={form.username}
               onChange={handleChange}
               placeholder="username"
-              className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Mật khẩu *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Mật khẩu *</label>
             <input
               name="password"
               type="password"
               value={form.password}
               onChange={handleChange}
               placeholder="••••••••"
-              className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
             />
             {form.password && (() => {
               const strength = getPasswordStrength(form.password);
               return (
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className="text-gray-400">Độ mạnh mật khẩu:</span>
-                    <span className={strength.score === 5 ? "text-green-600 font-semibold" : strength.score >= 3 ? "text-amber-600 font-semibold" : "text-red-500 font-semibold"}>
+                    <span className="text-zinc-400">Độ mạnh mật khẩu:</span>
+                    <span className={strength.score === 5 ? "text-green-600 dark:text-green-400 font-semibold" : strength.score >= 3 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-red-500 font-semibold"}>
                       {strength.label}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${strength.color} ${strength.width}`}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 leading-tight">
+                  <p className="text-[10px] text-zinc-400 leading-tight">
                     Yêu cầu: tối thiểu 6 ký tự, gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt.
                   </p>
                 </div>
@@ -250,14 +252,14 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Xác nhận mật khẩu *</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Xác nhận mật khẩu *</label>
             <input
               name="confirmPassword"
               type="password"
               value={form.confirmPassword}
               onChange={handleChange}
               placeholder="••••••••"
-              className="w-full border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors text-sm"
             />
           </div>
 
@@ -266,16 +268,16 @@ export default function RegisterPage() {
           <button
             onClick={handleRegister}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? "Đang đăng ký..." : "Đăng ký"}
           </button>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
             Đã có tài khoản?{" "}
             <button
-              onClick={() => router.push("/login")}
-              className="text-blue-600 hover:underline font-medium"
+              onClick={() => router.push("/login.html")}
+              className="text-blue-600 hover:underline font-medium dark:text-blue-400"
             >
               Đăng nhập
             </button>

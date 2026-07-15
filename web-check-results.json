@@ -1,0 +1,769 @@
+{
+  "ssl": {
+    "subject": {
+      "CN": "*.vercel.app"
+    },
+    "issuer": {
+      "C": "US",
+      "O": "Google Trust Services",
+      "CN": "WR1"
+    },
+    "subjectaltname": "DNS:*.vercel.app",
+    "infoAccess": {
+      "CA Issuers - URI": [
+        "http://i.pki.goog/wr1.crt"
+      ]
+    },
+    "ca": false,
+    "modulus": "8FB31A1A75260AC8EA70F7C67A913829A29CAB8C173F94A66BDFFAD5A5D0E1FD16EE3774B44DBC1F24EAC14EF048E0B81684EFDFF9929F1C1CE2021EE3E4312C74123ECA4431A85164D41899880549A0B09912C366C08A147E491D8EE6EC66D7F4E5A551073787ACA149D6D2323F7C6253AF6A5945317CB33438174B839A679A11FADCDE79C7843BADFEA76168962E7E4EC75EA7698E72D10E27D04F752E5C83BE701E78645571000A216BF392BDFEA56C3C5E4D0D3130F3035F6553271507689F8B5115830C082D9C1F628751ABD2B92D4E7B2513B58B7457AF0D0D2FDCABC4057C39EB681F0C8F8781CD5AC1D7130B6D7F1CDE21C4653D7E9F7E3B16F0B727",
+    "exponent": "0x10001",
+    "pubkey": {
+      "type": "Buffer",
+      "data": [
+        48,
+        130,
+        1,
+        34,
+        48,
+        13,
+        6,
+        9,
+        42,
+        134,
+        72,
+        134,
+        247,
+        13,
+        1,
+        1,
+        1,
+        5,
+        0,
+        3,
+        130,
+        1,
+        15,
+        0,
+        48,
+        130,
+        1,
+        10,
+        2,
+        130,
+        1,
+        1,
+        0,
+        143,
+        179,
+        26,
+        26,
+        117,
+        38,
+        10,
+        200,
+        234,
+        112,
+        247,
+        198,
+        122,
+        145,
+        56,
+        41,
+        162,
+        156,
+        171,
+        140,
+        23,
+        63,
+        148,
+        166,
+        107,
+        223,
+        250,
+        213,
+        165,
+        208,
+        225,
+        253,
+        22,
+        238,
+        55,
+        116,
+        180,
+        77,
+        188,
+        31,
+        36,
+        234,
+        193,
+        78,
+        240,
+        72,
+        224,
+        184,
+        22,
+        132,
+        239,
+        223,
+        249,
+        146,
+        159,
+        28,
+        28,
+        226,
+        2,
+        30,
+        227,
+        228,
+        49,
+        44,
+        116,
+        18,
+        62,
+        202,
+        68,
+        49,
+        168,
+        81,
+        100,
+        212,
+        24,
+        153,
+        136,
+        5,
+        73,
+        160,
+        176,
+        153,
+        18,
+        195,
+        102,
+        192,
+        138,
+        20,
+        126,
+        73,
+        29,
+        142,
+        230,
+        236,
+        102,
+        215,
+        244,
+        229,
+        165,
+        81,
+        7,
+        55,
+        135,
+        172,
+        161,
+        73,
+        214,
+        210,
+        50,
+        63,
+        124,
+        98,
+        83,
+        175,
+        106,
+        89,
+        69,
+        49,
+        124,
+        179,
+        52,
+        56,
+        23,
+        75,
+        131,
+        154,
+        103,
+        154,
+        17,
+        250,
+        220,
+        222,
+        121,
+        199,
+        132,
+        59,
+        173,
+        254,
+        167,
+        97,
+        104,
+        150,
+        46,
+        126,
+        78,
+        199,
+        94,
+        167,
+        105,
+        142,
+        114,
+        209,
+        14,
+        39,
+        208,
+        79,
+        117,
+        46,
+        92,
+        131,
+        190,
+        112,
+        30,
+        120,
+        100,
+        85,
+        113,
+        0,
+        10,
+        33,
+        107,
+        243,
+        146,
+        189,
+        254,
+        165,
+        108,
+        60,
+        94,
+        77,
+        13,
+        49,
+        48,
+        243,
+        3,
+        95,
+        101,
+        83,
+        39,
+        21,
+        7,
+        104,
+        159,
+        139,
+        81,
+        21,
+        131,
+        12,
+        8,
+        45,
+        156,
+        31,
+        98,
+        135,
+        81,
+        171,
+        210,
+        185,
+        45,
+        78,
+        123,
+        37,
+        19,
+        181,
+        139,
+        116,
+        87,
+        175,
+        13,
+        13,
+        47,
+        220,
+        171,
+        196,
+        5,
+        124,
+        57,
+        235,
+        104,
+        31,
+        12,
+        143,
+        135,
+        129,
+        205,
+        90,
+        193,
+        215,
+        19,
+        11,
+        109,
+        127,
+        28,
+        222,
+        33,
+        196,
+        101,
+        61,
+        126,
+        159,
+        126,
+        59,
+        22,
+        240,
+        183,
+        39,
+        2,
+        3,
+        1,
+        0,
+        1
+      ]
+    },
+    "bits": 2048,
+    "valid_from": "Jun 28 13:27:57 2026 GMT",
+    "valid_to": "Sep 26 13:27:56 2026 GMT",
+    "fingerprint": "67:7E:08:96:CE:36:50:12:25:03:0A:77:67:C2:A8:60:CD:38:21:41",
+    "fingerprint256": "EE:54:CB:11:F1:6C:C3:11:B3:AC:BA:E5:7F:8F:BB:03:F3:38:C1:B2:A2:0D:E7:27:22:C3:EA:FD:0D:AE:01:40",
+    "fingerprint512": "B7:9E:62:01:DE:7B:85:98:F4:5C:A2:77:55:20:80:13:70:85:F1:7F:C9:4B:50:0C:B3:E3:28:01:D8:A6:81:46:2C:D4:A5:5F:99:4A:9F:91:2E:75:9D:79:02:D5:B4:58:AB:E9:28:D1:F8:1F:55:37:C0:54:96:6B:3E:72:CA:30",
+    "ext_key_usage": [
+      "1.3.6.1.5.5.7.3.1"
+    ],
+    "serialNumber": "B1C2B607DF94F28513779AE26FECF92F"
+  },
+  "domain": {
+    "internicData": {
+      "error": "No matches found for domain in internic database"
+    },
+    "whoisData": null
+  },
+  "tech-stack": {
+    "urls": {
+      "https://smartdorm-orpin.vercel.app/": {
+        "status": 200
+      }
+    },
+    "technologies": [
+      {
+        "slug": "node-js",
+        "name": "Node.js",
+        "description": "Node.js is an open-source, cross-platform, JavaScript runtime environment that executes JavaScript code outside a web browser.",
+        "confidence": 100,
+        "version": null,
+        "icon": "Node.js.svg",
+        "website": "https://nodejs.org",
+        "cpe": "cpe:2.3:a:nodejs:node.js:*:*:*:*:*:*:*:*",
+        "categories": [
+          {
+            "id": 27,
+            "slug": "programming-languages",
+            "name": "Programming languages"
+          }
+        ]
+      },
+      {
+        "slug": "react",
+        "name": "React",
+        "description": "React is an open-source JavaScript library for building user interfaces or UI components.",
+        "confidence": 100,
+        "version": null,
+        "icon": "React.svg",
+        "website": "https://reactjs.org",
+        "cpe": "cpe:2.3:a:facebook:react:*:*:*:*:*:*:*:*",
+        "categories": [
+          {
+            "id": 12,
+            "slug": "javascript-frameworks",
+            "name": "JavaScript frameworks"
+          }
+        ]
+      },
+      {
+        "slug": "next-js",
+        "name": "Next.js",
+        "description": "Next.js is a React framework for developing single page Javascript applications.",
+        "confidence": 100,
+        "version": "16.2.6",
+        "icon": "Next.js.svg",
+        "website": "https://nextjs.org",
+        "cpe": "cpe:2.3:a:zeit:next.js:*:*:*:*:*:*:*:*",
+        "categories": [
+          {
+            "id": 12,
+            "slug": "javascript-frameworks",
+            "name": "JavaScript frameworks"
+          },
+          {
+            "id": 18,
+            "slug": "web-frameworks",
+            "name": "Web frameworks"
+          },
+          {
+            "id": 22,
+            "slug": "web-servers",
+            "name": "Web servers"
+          },
+          {
+            "id": 57,
+            "slug": "static-site-generator",
+            "name": "Static site generator"
+          }
+        ],
+        "rootPath": true
+      },
+      {
+        "slug": "vercel",
+        "name": "Vercel",
+        "description": "Vercel is a cloud platform for static frontends and serverless functions.",
+        "confidence": 100,
+        "version": null,
+        "icon": "vercel.svg",
+        "website": "https://vercel.com",
+        "cpe": null,
+        "categories": [
+          {
+            "id": 62,
+            "slug": "paas",
+            "name": "PaaS"
+          }
+        ],
+        "rootPath": true
+      },
+      {
+        "slug": "priority-hints",
+        "name": "Priority Hints",
+        "description": "Priority Hints exposes a mechanism for developers to signal a relative priority for browsers to consider when fetching resources.",
+        "confidence": 100,
+        "version": null,
+        "icon": "Priority Hints.svg",
+        "website": "https://wicg.github.io/priority-hints/",
+        "cpe": null,
+        "categories": [
+          {
+            "id": 92,
+            "slug": "performance",
+            "name": "Performance"
+          }
+        ],
+        "rootPath": true
+      },
+      {
+        "slug": "hsts",
+        "name": "HSTS",
+        "description": "HTTP Strict Transport Security (HSTS) informs browsers that the site should only be accessed using HTTPS.",
+        "confidence": 100,
+        "version": null,
+        "icon": "default.svg",
+        "website": "https://www.rfc-editor.org/rfc/rfc6797#section-6.1",
+        "cpe": null,
+        "categories": [
+          {
+            "id": 16,
+            "slug": "security",
+            "name": "Security"
+          }
+        ],
+        "rootPath": true
+      },
+      {
+        "slug": "webpack",
+        "name": "Webpack",
+        "description": "Webpack is an open-source JavaScript module bundler.",
+        "confidence": 100,
+        "version": null,
+        "icon": "Webpack.svg",
+        "website": "https://webpack.js.org/",
+        "cpe": null,
+        "categories": [
+          {
+            "id": 19,
+            "slug": "miscellaneous",
+            "name": "Miscellaneous"
+          }
+        ]
+      }
+    ]
+  },
+  "headers": {
+    "access-control-allow-origin": "*",
+    "age": "233662",
+    "cache-control": "public, max-age=0, must-revalidate",
+    "content-disposition": "inline",
+    "content-type": "text/html; charset=utf-8",
+    "date": "Sun, 12 Jul 2026 23:50:45 GMT",
+    "etag": "W/\"4d6b64a98a6d98060ff99d101366a3d5\"",
+    "last-modified": "Fri, 10 Jul 2026 06:56:22 GMT",
+    "server": "Vercel",
+    "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+    "x-matched-path": "/",
+    "x-vercel-cache": "HIT",
+    "x-vercel-id": "sin1::kph2h-1783900245668-1dc04c369c58",
+    "transfer-encoding": "chunked"
+  },
+  "dns": {
+    "A": {
+      "address": "216.198.79.195",
+      "family": 4
+    },
+    "AAAA": [
+      "64.29.17.195",
+      "216.198.79.195"
+    ],
+    "MX": [],
+    "TXT": [],
+    "NS": [],
+    "CNAME": [],
+    "SOA": [],
+    "SRV": [],
+    "PTR": []
+  },
+  "http-security": {
+    "strictTransportPolicy": true,
+    "xFrameOptions": false,
+    "xContentTypeOptions": false,
+    "xXSSProtection": false,
+    "contentSecurityPolicy": false
+  },
+  "social-tags": {
+    "title": "SmartDorm - Quản lý KTX thông minh",
+    "description": "Hệ thống quản lý Ký túc xá và Nhà trọ thông minh",
+    "viewport": "width=device-width, initial-scale=1",
+    "favicon": "/favicon.ico?favicon.0tqgwhkw3aels.ico"
+  },
+  "security-txt": {
+    "isPresent": false
+  },
+  "firewall": {
+    "hasWaf": false
+  },
+  "dnssec": {
+    "DNSKEY": {
+      "isFound": false,
+      "answer": null,
+      "response": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "https://smartdorm-orpin.vercel.app/.",
+            "type": 48
+          }
+        ],
+        "Authority": [
+          {
+            "name": ".",
+            "type": 6,
+            "TTL": 42069,
+            "data": "a.root-servers.net. nstld.verisign-grs.com. 2026071200 1800 900 604800 86400"
+          }
+        ]
+      }
+    },
+    "DS": {
+      "isFound": false,
+      "answer": null,
+      "response": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "https://smartdorm-orpin.vercel.app/.",
+            "type": 43
+          }
+        ],
+        "Authority": [
+          {
+            "name": ".",
+            "type": 6,
+            "TTL": 86400,
+            "data": "a.root-servers.net. nstld.verisign-grs.com. 2026071201 1800 900 604800 86400"
+          }
+        ],
+        "Comment": "Response from 2001:500:1::53."
+      }
+    },
+    "RRSIG": {
+      "isFound": false,
+      "answer": null,
+      "response": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "https://smartdorm-orpin.vercel.app/.",
+            "type": 46
+          }
+        ],
+        "Authority": [
+          {
+            "name": ".",
+            "type": 6,
+            "TTL": 25740,
+            "data": "a.root-servers.net. nstld.verisign-grs.com. 2026071102 1800 900 604800 86400"
+          }
+        ]
+      }
+    }
+  },
+  "hsts": {
+    "message": "Site is compatible with the HSTS preload list!",
+    "compatible": true,
+    "hstsHeader": "max-age=63072000; includeSubDomains; preload"
+  },
+  "threats": {
+    "urlHaus": {
+      "error": "Request to URLHaus failed, Request failed with status code 401"
+    },
+    "phishTank": {
+      "url0": {
+        "url": "https://smartdorm-orpin.vercel.app/",
+        "in_database": "false"
+      }
+    },
+    "cloudmersive": {
+      "error": "CLOUDMERSIVE_API_KEY is required for the Cloudmersive check"
+    },
+    "safeBrowsing": {
+      "error": "GOOGLE_CLOUD_API_KEY is required for the Google Safe Browsing check"
+    }
+  },
+  "redirects": {
+    "redirects": [
+      "https://smartdorm-orpin.vercel.app/"
+    ]
+  },
+  "linked-pages": {
+    "internal": [
+      "https://smartdorm-orpin.vercel.app/#",
+      "https://smartdorm-orpin.vercel.app/#rooms",
+      "https://smartdorm-orpin.vercel.app/login",
+      "https://smartdorm-orpin.vercel.app/register"
+    ],
+    "external": []
+  },
+  "robots-txt": "{\"error\":\"Error fetching robots.txt: Request failed with status code 404\"}",
+  "status": {
+    "isUp": true,
+    "responseTime": 118.89930000000095,
+    "responseCode": 200
+  },
+  "block-lists": {
+    "blocklists": [
+      {
+        "server": "AdGuard",
+        "serverIp": "176.103.130.130",
+        "isBlocked": false
+      },
+      {
+        "server": "AdGuard Family",
+        "serverIp": "176.103.130.132",
+        "isBlocked": false
+      },
+      {
+        "server": "CleanBrowsing Adult",
+        "serverIp": "185.228.168.10",
+        "isBlocked": false
+      },
+      {
+        "server": "CleanBrowsing Family",
+        "serverIp": "185.228.168.168",
+        "isBlocked": false
+      },
+      {
+        "server": "CleanBrowsing Security",
+        "serverIp": "185.228.168.9",
+        "isBlocked": false
+      },
+      {
+        "server": "CloudFlare",
+        "serverIp": "1.1.1.1",
+        "isBlocked": false
+      },
+      {
+        "server": "CloudFlare Family",
+        "serverIp": "1.1.1.3",
+        "isBlocked": false
+      },
+      {
+        "server": "Comodo Secure",
+        "serverIp": "8.26.56.26",
+        "isBlocked": false
+      },
+      {
+        "server": "Google DNS",
+        "serverIp": "8.8.8.8",
+        "isBlocked": false
+      },
+      {
+        "server": "Neustar Family",
+        "serverIp": "156.154.70.3",
+        "isBlocked": false
+      },
+      {
+        "server": "Neustar Protection",
+        "serverIp": "156.154.70.2",
+        "isBlocked": false
+      },
+      {
+        "server": "Norton Family",
+        "serverIp": "199.85.126.20",
+        "isBlocked": false
+      },
+      {
+        "server": "OpenDNS",
+        "serverIp": "208.67.222.222",
+        "isBlocked": false
+      },
+      {
+        "server": "OpenDNS Family",
+        "serverIp": "208.67.222.123",
+        "isBlocked": false
+      },
+      {
+        "server": "Quad9",
+        "serverIp": "9.9.9.9",
+        "isBlocked": false
+      },
+      {
+        "server": "Yandex Family",
+        "serverIp": "77.88.8.7",
+        "isBlocked": false
+      },
+      {
+        "server": "Yandex Safe",
+        "serverIp": "77.88.8.88",
+        "isBlocked": false
+      }
+    ]
+  },
+  "carbon": {
+    "bytes": 31420,
+    "green": false,
+    "gco2e": 0.003274171818047762,
+    "rating": "A+",
+    "statistics": {
+      "adjustedBytes": 23722.1,
+      "energy": 0.000006627878174185753,
+      "co2": {
+        "grid": {
+          "grams": 0.003274171818047762,
+          "litres": 0.001821094365198165
+        },
+        "renewable": {
+          "grams": 0.0026739069847390054,
+          "litres": 0.0014872270649118344
+        }
+      }
+    },
+    "cleanerThan": 0.99,
+    "scanUrl": "https://smartdorm-orpin.vercel.app/"
+  }
+}

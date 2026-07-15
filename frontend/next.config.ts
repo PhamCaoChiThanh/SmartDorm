@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   outputFileTracingRoot: __dirname,
+  output: "export",
+  images: {
+    unoptimized: true, // required for static export if images are used
+  },
 };
 
 export default nextConfig;

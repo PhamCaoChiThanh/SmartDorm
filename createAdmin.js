@@ -2,8 +2,8 @@ const bcrypt = require('bcryptjs');
 const db = require('./src/utils/db');
 
 async function createAdmin() {
-  const username = 'admin';
-  const password = '123456';
+  const username = 'chithanh_admin';
+  const password = 'ThanhPlus2026_Secure@Admin_!#';
   const role = 'ADMIN';
 
   try {

@@ -124,11 +124,32 @@ namespace SmartDorm.Api.Controllers
                 if (room.Status == RoomStatus.OCCUPIED)
                     return BadRequest(new { success = false, message = "Phòng này hiện đã được thuê." });
 
-                // Check if tenant already has a pending request for this room
-                var exists = await _context.RoomRequests.AnyAsync(r =>
-                    r.TenantId == tenant.Id && r.RoomId == dto.RoomId && r.Status == RequestStatus.PENDING);
-                if (exists)
-                    return BadRequest(new { success = false, message = "Bạn đã có yêu cầu đang chờ duyệt cho phòng này." });
+                // Check if tenant already has an active contract (for room transfer check)
+                var activeContract = await _context.Contracts.FirstOrDefaultAsync(c => c.TenantId == tenant.Id && c.Status == ContractStatus.ACTIVE);
+                if (activeContract != null)
+                {
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+                    var daysStayed = today.DayNumber - activeContract.StartDate.DayNumber;
+                    if (daysStayed < 30)
+                    {
+                        return BadRequest(new { success = false, message = $"Bạn phải sinh sống tại phòng hiện tại ít nhất 30 ngày trước khi yêu cầu đổi phòng. Hiện tại bạn mới ở được {daysStayed} ngày." });
+                    }
+
+                    // Limit to 1 pending transfer/room request
+                    var hasPending = await _context.RoomRequests.AnyAsync(r => r.TenantId == tenant.Id && r.Status == RequestStatus.PENDING);
+                    if (hasPending)
+                    {
+                        return BadRequest(new { success = false, message = "Bạn đã có yêu cầu thuê/chuyển phòng đang chờ duyệt. Vui lòng đợi kết quả trước khi gửi yêu cầu khác." });
+                    }
+                }
+                else
+                {
+                    // Check if tenant already has a pending request for this room
+                    var exists = await _context.RoomRequests.AnyAsync(r =>
+                        r.TenantId == tenant.Id && r.RoomId == dto.RoomId && r.Status == RequestStatus.PENDING);
+                    if (exists)
+                        return BadRequest(new { success = false, message = "Bạn đã có yêu cầu đang chờ duyệt cho phòng này." });
+                }
 
                 // Check if tenant has any unpaid room invoices
                 var unpaidRoomInvoice = await _context.Invoices
@@ -245,6 +266,31 @@ namespace SmartDorm.Api.Controllers
                         return BadRequest(new { success = false, message = "Phòng này hiện đã được thuê bởi người khác." });
                     }
 
+                    // Check if tenant already has an active contract (Room Transfer case)
+                    var oldContract = await _context.Contracts.FirstOrDefaultAsync(c => c.TenantId == request.TenantId && c.Status == ContractStatus.ACTIVE);
+                    if (oldContract != null)
+                    {
+                        // 1. Terminate old contract
+                        oldContract.Status = ContractStatus.TERMINATED;
+                        oldContract.EndDate = DateOnly.FromDateTime(DateTime.Today);
+                        oldContract.UpdatedAt = DateTimeOffset.UtcNow;
+
+                        // 2. Update old room status and occupants
+                        var oldRoom = await _context.Rooms.FindAsync(oldContract.RoomId);
+                        if (oldRoom != null)
+                        {
+                            var oldRoomActiveContractsCount = await _context.Contracts.CountAsync(c => c.RoomId == oldRoom.Id && c.Status == ContractStatus.ACTIVE && c.Id != oldContract.Id);
+                            oldRoom.CurrentOccupants = Math.Max(0, oldRoomActiveContractsCount);
+                            if (oldRoom.Status != RoomStatus.MAINTENANCE)
+                            {
+                                oldRoom.Status = oldRoom.CurrentOccupants >= oldRoom.Capacity 
+                                    ? RoomStatus.OCCUPIED 
+                                    : RoomStatus.AVAILABLE;
+                            }
+                            oldRoom.UpdatedAt = DateTimeOffset.UtcNow;
+                        }
+                    }
+
                     // Create Contract
                     var contract = new Contract
                     {
@@ -257,28 +303,64 @@ namespace SmartDorm.Api.Controllers
                     _context.Contracts.Add(contract);
                     await _context.SaveChangesAsync(); // generate contract ID
 
-                    // Create Deposit matching room price
-                    var deposit = new Deposit
-                    {
-                        ContractId = contract.Id,
-                        TotalAmount = room.BasePrice,
-                        RemainingBalance = room.BasePrice,
-                        Status = "HOLDING",
-                        CreatedAt = DateTimeOffset.UtcNow,
-                        UpdatedAt = DateTimeOffset.UtcNow
-                    };
-                    _context.Deposits.Add(deposit);
-                    await _context.SaveChangesAsync(); // generate deposit ID
+                    // Handle Deposit
+                    var oldDeposit = oldContract != null 
+                        ? await _context.Deposits.FirstOrDefaultAsync(d => d.ContractId == oldContract.Id && d.Status == "HOLDING")
+                        : null;
 
-                    var depositTransaction = new DepositTransaction
+                    if (oldDeposit != null)
                     {
-                        DepositId = deposit.Id,
-                        Amount = room.BasePrice,
-                        TransactionType = "RECEIVE",
-                        Reason = "Thu tiền đặt cọc khi bắt đầu hợp đồng (Duyệt yêu cầu thuê)",
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    _context.DepositTransactions.Add(depositTransaction);
+                        // Transfer deposit
+                        oldDeposit.Status = "TRANSFERRED";
+                        oldDeposit.UpdatedAt = DateTimeOffset.UtcNow;
+
+                        var deposit = new Deposit
+                        {
+                            ContractId = contract.Id,
+                            TotalAmount = oldDeposit.RemainingBalance,
+                            RemainingBalance = oldDeposit.RemainingBalance,
+                            Status = "HOLDING",
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            UpdatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.Deposits.Add(deposit);
+                        await _context.SaveChangesAsync();
+
+                        var depositTransaction = new DepositTransaction
+                        {
+                            DepositId = deposit.Id,
+                            Amount = oldDeposit.RemainingBalance,
+                            TransactionType = "RECEIVE",
+                            Reason = $"Chuyển cọc từ phòng cũ (hợp đồng {oldContract.Id}) sang phòng mới do đổi phòng",
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.DepositTransactions.Add(depositTransaction);
+                    }
+                    else
+                    {
+                        // Create standard new deposit
+                        var deposit = new Deposit
+                        {
+                            ContractId = contract.Id,
+                            TotalAmount = room.BasePrice,
+                            RemainingBalance = room.BasePrice,
+                            Status = "HOLDING",
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            UpdatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.Deposits.Add(deposit);
+                        await _context.SaveChangesAsync(); // generate deposit ID
+
+                        var depositTransaction = new DepositTransaction
+                        {
+                            DepositId = deposit.Id,
+                            Amount = room.BasePrice,
+                            TransactionType = "RECEIVE",
+                            Reason = "Thu tiền đặt cọc khi bắt đầu hợp đồng (Duyệt yêu cầu thuê)",
+                            CreatedAt = DateTimeOffset.UtcNow
+                        };
+                        _context.DepositTransactions.Add(depositTransaction);
+                    }
 
                     // Update room status based on capacity
                     var activeContractsCount = await _context.Contracts.CountAsync(c => c.RoomId == request.RoomId && c.Status == ContractStatus.ACTIVE);

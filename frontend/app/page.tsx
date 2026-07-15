@@ -90,13 +90,18 @@ export default function HomePage() {
     if (name) setCurrentName(name);
 
     const role = sessionStorage.getItem("currentRole");
+    const lastActiveRoute = sessionStorage.getItem("lastActiveRoute");
     if (role) {
       setCurrentRole(role);
-      if (role === "ADMIN" || role === "MANAGER") {
+      if (lastActiveRoute && lastActiveRoute !== "/") {
+        router.push(lastActiveRoute);
+        return;
+      } else if (role === "ADMIN" || role === "MANAGER") {
         router.push("/admin/dashboard");
         return;
       } else if (role === "TENANT") {
-        setActiveTab("rooms");
+        router.push("/tenant/invoice");
+        return;
       }
     }
 
@@ -593,7 +598,7 @@ export default function HomePage() {
                             </div>
                             <div className="flex gap-2">
                               <button
-                                onClick={() => router.push(`/rooms/${room.id}`)}
+                                onClick={() => router.push(`/rooms/1?id=${room.id}`)}
                                 className="text-xs px-3.5 py-2.5 rounded-xl font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition"
                               >
                                 Chi tiết
@@ -602,7 +607,7 @@ export default function HomePage() {
                                 onClick={() => {
                                   const role = sessionStorage.getItem("currentRole");
                                   if (!role) router.push("/login");
-                                  else router.push(`/rooms/${room.id}?action=register`);
+                                  else router.push(`/rooms/1?id=${room.id}&action=register`);
                                 }}
                                 className="text-xs px-3.5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition"
                               >

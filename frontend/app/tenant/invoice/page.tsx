@@ -29,9 +29,9 @@ const paymentMethods = [
     description: "Ngân hàng MB Bank (VietQR)",
     icon: <Banknote size={22} className="text-blue-600" />,
     detail: {
-      bankName: "",
-      accountNumber: "",
-      accountName: "",
+      bankName: "MB Bank (Ngân hàng Quân đội)",
+      accountNumber: "0704569016",
+      accountName: "PHAM CAO CHI THANH",
     },
   },
 ];
@@ -339,7 +339,7 @@ export default function TenantInvoice() {
 
   // Dynamic VietQR Generation URL
   const qrTransferContent = invoice ? `SMARTDORM PHONG ${roomNumber} T${invoice.billingMonth}/${invoice.billingYear}` : "";
-  const vietQrUrl = `https://img.vietqr.io/image/MB--compact2.png?amount=${total}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent("")}`;
+  const vietQrUrl = `https://img.vietqr.io/image/MB-0704569016-compact2.png?amount=${total}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent("PHAM CAO CHI THANH")}`;
 
   if (loading) {
     return (
