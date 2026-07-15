@@ -276,7 +276,7 @@ export default function RoomDetailPage() {
       {/* Header */}
       <header className="sticky top-0 bg-white/90 backdrop-blur shadow-sm z-50 border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <button onClick={() => router.push("/")} className="flex items-center gap-3">
+          <button onClick={() => { window.location.href = "/"; }} className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)", boxShadow: "0 4px 24px rgba(124,58,237,0.35)" }}>
               <Home size={17} className="text-white" />
